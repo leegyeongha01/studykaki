@@ -163,8 +163,6 @@ dialog::backdrop { background: #242b256f; backdrop-filter: blur(3px); }
 #focus-task-list input:checked + span { text-decoration: line-through; color: var(--muted); }
 #focus-task-list button { flex: none; color: var(--rust); text-decoration: underline; font-size: 12px; padding: 5px; }
 .toast { position: fixed; right: 18px; bottom: 18px; z-index: 3; max-width: min(420px, calc(100% - 36px)); padding: 11px 16px; border-radius: 9px; background: #273a2c; color: white; font-size: 14px; box-shadow: 0 5px 14px #0002; }
-#room-dialog { width: min(655px, calc(100% - 28px)); }
-.room-roomshot { height: clamp(112px, 21vw, 196px); background: #b8906c url("./reading-room.webp") center 53% / cover no-repeat; }
 .room-notice { margin-bottom: 14px; padding: 9px 12px; background: var(--sage); color: #304333; border-radius: 8px; font-size: 13px; }
 .room-header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 2px 14px; margin: 12px 0; }
 .room-header h3 { font-size: 17px; }
@@ -179,8 +177,6 @@ dialog::backdrop { background: #242b256f; backdrop-filter: blur(3px); }
 .room-seat-avatar[data-avatar="gold"] { --outfit: #b58a32; }
 .room-seat-avatar[data-avatar]::before { content: ""; position: absolute; z-index: 1; top: 1px; width: 14px; height: 15px; border-radius: 50%; background: #d49b7b; border-top: 3px solid #52392d; }
 .room-seat-avatar[data-avatar]::after { content: ""; position: absolute; bottom: 2px; width: 24px; height: 16px; border-radius: 9px 9px 4px 4px; background: var(--outfit); }
-.room-avatar-control { display: flex; align-items: center; gap: 8px; }
-.room-avatar-control .room-seat-avatar { flex: none; }
 .room-seat.is-open .room-seat-avatar::before { content: ""; position: absolute; top: 6px; width: 18px; height: 18px; border: 1px dashed #baac9a; border-radius: 5px; background: #ede3d6; }
 .room-seat-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; }
 .room-seat-status { color: var(--muted); font-size: 10px; line-height: 1.1; }

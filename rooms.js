@@ -43,6 +43,8 @@
   let transportMessage = "";
   let connection = null;
   let remotePeers = [];
+  let latestPosition;
+  let rosterKey = "";
   let connectionRevision = 0;
   let feedbackTimer;
   let phase = "profile";
@@ -64,7 +66,18 @@
   function readIdentity(data) {
     if (!data || typeof data.id !== "string" || !identityIds.test(data.id) || !avatars.has(data.avatar)) return null;
     const name = displayName(data.name);
-    return name ? { id: data.id, name, avatar: data.avatar, hair: chosenHair(data.hair) } : null;
+    if (!name) return null;
+    const position = data.position;
+    const safePosition = position && Number.isFinite(position.x) && Number.isFinite(position.z) &&
+      Math.abs(position.x) <= 11 && Math.abs(position.z) <= 8 && Number.isFinite(position.facing) ? {
+        x: position.x, z: position.z, facing: position.facing,
+        walking: position.walking === true, sitting: position.sitting === true,
+      } : undefined;
+    return {
+      id: data.id, name, avatar: data.avatar, hair: chosenHair(data.hair),
+      hairStyle: hairStyles.has(data.hairStyle) ? data.hairStyle : "short",
+      glasses: data.glasses === true, headphones: data.headphones === true, position: safePosition,
+    };
   }
 
   function readPreference() {
@@ -229,6 +242,8 @@
 
   function leaveRoom() {
     remotePeers = [];
+    latestPosition = undefined;
+    rosterKey = "";
     connectionRevision += 1;
     connection?.close();
     connection = null;
@@ -251,7 +266,7 @@
     try {
       const link = await connect({
         room: { ...room },
-        identity: { ...identity },
+        identity: { ...identity, position: latestPosition },
         onPeers(list) {
           if (revision !== connectionRevision) return;
           const roster = new Map();
@@ -262,13 +277,22 @@
             }
           }
           remotePeers = Array.from(roster.values());
-          renderRoom();
+          window.dispatchEvent(new CustomEvent("studykaki:room-peers", { detail: remotePeers }));
+          const nextRoster = JSON.stringify(remotePeers.map(({ position, ...profile }) => profile));
+          if (nextRoster !== rosterKey) {
+            rosterKey = nextRoster;
+            renderRoom();
+          }
         },
         onStatus(nextStatus, message) {
           if (revision !== connectionRevision) return;
           transportStatus = ["live", "ready", "connecting"].includes(nextStatus) ? nextStatus : "failed";
           transportMessage = typeof message === "string" ? message.slice(0, 180) : "";
-          if (transportStatus === "failed") remotePeers = [];
+          if (transportStatus === "failed") {
+            remotePeers = [];
+            rosterKey = "";
+            window.dispatchEvent(new CustomEvent("studykaki:room-peers", { detail: [] }));
+          }
           renderRoom();
         },
       });
@@ -323,7 +347,7 @@
     const matchesInvite = invite?.kind === kind;
     room = { kind, code: matchesInvite && invite.code ? invite.code : createId(8),
       invited: Boolean(matchesInvite && invite.invited) };
-    identity = { id: createId(12), name, avatar: look.avatar, hair: look.hair };
+    identity = { id: createId(12), name, ...look };
     const preference = readPreference();
     writePreference({
       ...preference, ...look, kind, name: profileStep || fields.get("remember") ? name : undefined,
@@ -440,6 +464,10 @@
     }
   });
   window.addEventListener("hashchange", showInviteIfPresent);
+  window.addEventListener("studykaki:position", (event) => {
+    latestPosition = event.detail;
+    connection?.update({ position: latestPosition });
+  });
   window.addEventListener("pagehide", () => {
     if (identity) leaveRoom();
   });

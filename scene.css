@@ -8,6 +8,13 @@
 
 .room-app { background: var(--night); }
 .study-scene { position: relative; isolation: isolate; width: 100%; height: 100svh; min-height: 470px; overflow: hidden; }
+#scene-3d { position: absolute; inset: 0; display: none; background: #41374a; z-index: -1; }
+#scene-3d canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+[data-scene-render="3d"] #scene-3d { display: block; }
+[data-scene-render="3d"] .scene-wall, [data-scene-render="3d"] .scene-vignette, [data-scene-render="3d"] .scene-rug, [data-scene-render="3d"] #scene-character, [data-scene-render="3d"] #scene-peers, [data-scene-render="3d"] .scene-hotspots { display: none; }
+[data-scene-render="3d"][data-room-phase="active"] #scene-3d { cursor: crosshair; }
+.scene-controls { position: absolute; right: 23px; bottom: 74px; z-index: 2; background: #23312add; color: #fff7e7; padding: 5px 10px; border-radius: 8px; font-size: 12px; }
+.scene-controls span { color: #e3b95c; padding: 0 2px; }
 .scene-wall, .scene-vignette { position: absolute; inset: 0; pointer-events: none; }
 .scene-wall {
   z-index: -3;
@@ -68,6 +75,7 @@
   overflow: auto;
   scrollbar-width: thin;
 }
+.room-app .room-panel { width: min(380px, calc(100% - 46px)); }
 .step-label { display: flex; align-items: center; gap: 6px; color: #685b4b; font-size: 10px; font-weight: 700; letter-spacing: .11em; margin-bottom: 5px; }
 .step-label span { width: 4px; height: 4px; border-radius: 50%; background: #9b5638; }
 .room-panel h1, .room-panel h2 { font-size: 26px; font-weight: 700; line-height: 1.08; letter-spacing: -.045em; }
@@ -140,7 +148,14 @@
 .scene-character[data-seat="window"] { left: 79%; top: 48%; scale: .68; }
 .scene-character[data-seat="table"] { left: 64%; top: 63%; scale: .82; }
 .scene-character[data-seat="rug"] { left: 73%; top: 80%; }
+.scene-peer { scale: .48; top: 55%; left: 54%; }
+.scene-peer:nth-child(2) { left: 68%; top: 44%; scale: .4; }
+.scene-peer:nth-child(3) { left: 86%; top: 62%; scale: .5; }
+.scene-peer:nth-child(4) { left: 48%; top: 65%; scale: .55; }
+.scene-peer:nth-child(5) { left: 91%; top: 78%; scale: .62; }
 .scene-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #ffe184; border: 1px solid #5b4a2b; border-radius: 30px; box-shadow: 0 4px 10px #21181155; padding: 3px 10px; color: #25332a; font-size: 13px; font-weight: 700; }
+.name-3d { position: absolute; top: 0; left: 0; transform: translate(-50%, -100%); pointer-events: none; font-size: 12px; }
+.name-3d:not(.player-tag) { background: #f7e7ca; }
 .kaki-avatar { --outfit: #d59b35; --highlight: #efbd63; --hair: #302526; position: relative; width: clamp(101px, 12vw, 176px); aspect-ratio: .68; filter: drop-shadow(6px 10px 8px #13190e6b); }
 .kaki-avatar[data-avatar="terracotta"] { --outfit: #a84d39; --highlight: #df8a67; }
 .kaki-avatar[data-avatar="sage"] { --outfit: #507c60; --highlight: #9cb182; }
@@ -183,7 +198,7 @@
   .scene-location { right: 9px; top: 10px; padding: 7px 9px; min-width: 0; gap: 5px; }
   .scene-location strong { font-size: 11px; }
   .scene-location small { font-size: 10px; }
-  .room-panel { left: 9px; bottom: 49px; width: min(350px, calc(100% - 18px)); max-height: min(57svh, calc(100% - 147px)); padding: 11px 12px; }
+  .room-app .room-panel { left: 9px; bottom: 49px; width: min(350px, calc(100% - 18px)); max-height: min(57svh, calc(100% - 147px)); padding: 11px 12px; }
   .room-panel h1 { font-size: 23px; }
   .room-intro { margin: 4px 0 6px; }
   .avatar-options { margin-top: 5px; }
@@ -192,6 +207,11 @@
   .scene-character[data-seat="window"] { left: 78%; top: 39%; }
   .scene-character[data-seat="table"] { left: 53%; top: 43%; }
   .scene-character[data-seat="rug"] { left: 69%; top: 44%; }
+  .scene-peer { left: 37%; top: 35%; scale: .64; }
+  .scene-peer:nth-child(2) { left: 61%; top: 29%; scale: .57; }
+  .scene-peer:nth-child(3) { left: 86%; top: 41%; scale: .67; }
+  .scene-peer:nth-child(4) { left: 22%; top: 43%; scale: .66; }
+  .scene-peer:nth-child(5) { left: 76%; top: 23%; scale: .52; }
   .scene-seat { font-size: 10px; padding: 4px 6px; }
   .scene-seat-window { right: 10px; top: 20%; }
   .scene-seat-table { right: 26%; top: 30%; }
@@ -202,6 +222,7 @@
   .scene-character { gap: 5px; }
   .scene-tools { right: 9px; bottom: 9px; gap: 5px; }
   .tool-pill { padding: 6px 8px; font-size: 11px; }
+  .scene-controls { left: 9px; right: 9px; bottom: auto; top: 91px; width: fit-content; font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .scene-character, .scene-wall { transition: none; }

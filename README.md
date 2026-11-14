@@ -1,6 +1,6 @@
 # StudyKaki
 
-StudyKaki opens directly in a virtual library for NTU Singapore students. Enter your name, major, and year, customise your avatar, and choose a room. Study alone or share a live room invitation with friends. Open the focus timer and checklist from the study scene.
+StudyKaki opens directly in a virtual library for NTU Singapore students. Enter your name, major, and year, customise your avatar, and choose a room. Click the floor to walk, use WASD or the arrow keys, and click a chair to sit. Study alone or share a live room invitation to see your friends' avatars move in the same room. Open the focus timer and checklist from the study scene.
 
 The **Campus sessions** button opens the campus meetup board. Search by date, study type, module code, or venue, plan a meetup, and export sessions as `.ics` files.
 
@@ -20,7 +20,7 @@ Open `index.html` in a browser, or serve this folder with any static HTTP server
 
 Sample sessions illustrate the study board. Your profile, created sessions, saved plans, bookmarks, and focus history are stored in this browser. A session link shares its details, including notes, with anyone who receives the link. Confirm attendance with your host directly. Each library manages space and seat bookings through its own booking channels. [NTU Library study spaces](https://www.ntu.edu.sg/education/libraries/about-ntu-library) · [NTU Library bookings](https://libfaq.ntu.edu.sg/faq/267267)
 
-Online rooms open when a host goes online and shares a live invite. Keep the host tab open. Participants see the display names and avatars chosen for the room. WebRTC uses [PeerJS Cloud](https://peerjs.com/server/cloud) for signaling. Some networks restrict peer-to-peer connections, so the room and timer can also be used solo.
+Online rooms open when a host goes online and shares a live invite. Keep the host tab open. Participants see the room display names, avatar settings, and in-room movement. WebRTC uses [PeerJS Cloud](https://peerjs.com/server/cloud) for signaling. Some networks restrict peer-to-peer connections, so the room and timer can also be used solo. The walkable scene uses [Three.js](https://threejs.org/) and WebGL.
 
 ## Feature references
 

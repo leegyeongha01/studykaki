@@ -12,10 +12,13 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./scene.css">
+  <script src="./vendor/three-r160.min.js" defer></script>
   <script src="./room-connect.js" defer></script>
   <script src="./rooms.js" defer></script>
   <script src="./focus.js" defer></script>
+  <script src="./walk.js" defer></script>
   <script src="./scene.js" defer></script>
+  <script src="./library.js" type="module"></script>
 </head>
 <body class="room-app" data-room-phase="profile" data-scene-room="quiet">
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -34,6 +37,7 @@
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   </svg>
   <main class="study-scene" aria-label="StudyKaki virtual library">
+    <div id="scene-3d" aria-hidden="true"></div>
     <div class="scene-wall" aria-hidden="true"></div>
     <div class="scene-vignette" aria-hidden="true"></div>
     <div class="scene-rug" aria-hidden="true"></div>
@@ -62,12 +66,15 @@
         <span class="avatar-headphones"></span>
       </div>
     </div>
+    <div id="scene-peers" aria-hidden="true"></div>
 
     <div class="scene-hotspots" aria-label="Move your character">
       <button type="button" data-seat="window" class="scene-seat scene-seat-window">Window seat</button>
       <button type="button" data-seat="table" class="scene-seat scene-seat-table">Study table</button>
       <button type="button" data-seat="rug" class="scene-seat scene-seat-rug">Entrance</button>
     </div>
+    <p id="scene-controls" class="scene-controls" hidden>Click the floor to walk <span>·</span> WASD or arrows <span>·</span> Click a chair to sit</p>
+    <p id="walk-status" class="sr-only" role="status"></p>
 
     <section id="room-dialog" class="room-panel" aria-label="Study room">
       <div id="room-entry">

@@ -9,7 +9,10 @@
   const tokenPattern = /^[0-9a-f]{32}$/;
   const avatars = new Set(['terracotta', 'sage', 'indigo', 'gold']);
   const hairColors = new Set(['dark', 'brown', 'blond', 'rose', 'slate']);
+  const hairStyles = new Set(['short', 'bob', 'bun']);
   const maxGuests = 5;
+  const updateInterval = 100;
+  const maximumBufferedBytes = 64 * 1024;
   const handshakeTimeout = 15000;
   const heartbeatInterval = 10000;
   const heartbeatTimeout = 45000;
@@ -65,14 +68,36 @@
     return Array.from(value.replace(/[\p{Cc}\u202a-\u202e\u2066-\u2069]/gu, '').trim()).slice(0, limit).join('');
   }
 
+  function position(value) {
+    if (!Number.isFinite(value?.x) || !Number.isFinite(value?.z) || Math.abs(value.x) > 30 || Math.abs(value.z) > 30) return null;
+    const sitting = value.sitting === true;
+    return {
+      x: Math.round(value.x * 1000) / 1000,
+      z: Math.round(value.z * 1000) / 1000,
+      facing: Number.isFinite(value.facing) && Math.abs(value.facing) <= Math.PI ? value.facing : 0,
+      walking: !sitting && value.walking === true,
+      sitting,
+    };
+  }
+
   function participant(value, id = value?.id) {
     if (typeof id !== 'string' || !identityPattern.test(id)) return null;
-    return {
+    const profile = {
       id,
       name: display(value?.name, 28) || 'Guest',
       avatar: avatars.has(value?.avatar) ? value.avatar : 'sage',
       hair: hairColors.has(value?.hair) ? value.hair : 'dark',
+      hairStyle: hairStyles.has(value?.hairStyle) ? value.hairStyle : 'short',
+      glasses: value?.glasses === true,
+      headphones: value?.headphones === true,
     };
+    const coordinates = position(value?.position);
+    if (coordinates) profile.position = coordinates;
+    return profile;
+  }
+
+  function hasCapacity(connection) {
+    return (connection.dataChannel?.bufferedAmount ?? 0) < maximumBufferedBytes && !(connection.bufferSize > 0);
   }
 
   function connect({ room, identity, onPeers, onStatus }) {
@@ -82,17 +107,29 @@
     const key = guest ? invitation.key : nonce();
     const clients = new Map();
     let currentProfile = participant(identity);
+    let currentProfileKey = JSON.stringify(currentProfile);
+    let sentProfileKey;
+    let renderedPeersKey;
+    let status;
     let peer;
     let host;
     let connected = false;
     let closed = false;
     let deadline;
     let ticker;
+    let pendingUpdate;
+
+    function setStatus(next, message) {
+      if (status === next) return;
+      status = next;
+      onStatus(next, message);
+    }
 
     function close() {
       if (closed) return;
       closed = true;
       clearTimeout(deadline);
+      clearTimeout(pendingUpdate);
       clearInterval(ticker);
       for (const client of clients.values()) clearTimeout(client.timeout);
       clients.clear();
@@ -103,7 +140,7 @@
       if (closed) return;
       close();
       onPeers([]);
-      onStatus('solo', message);
+      setStatus('solo', message);
     }
 
     function broadcastRoster() {
@@ -111,9 +148,40 @@
       const approved = [...clients.values()].filter(client => client.profile);
       const profiles = approved.map(client => client.profile);
       const roster = [currentProfile, ...profiles];
-      for (const client of approved) client.connection.send({ type: 'roster', roster });
-      onPeers(profiles);
-      onStatus(profiles.length ? 'live' : 'ready', profiles.length ? '' : 'Room ready. Share the invite to study together.');
+      const rosterKey = JSON.stringify(roster);
+      for (const client of approved) {
+        if (client.rosterKey === rosterKey || !client.connection.open) continue;
+        if (!hasCapacity(client.connection)) {
+          scheduleUpdate();
+          continue;
+        }
+        client.connection.send({ type: 'roster', roster });
+        client.rosterKey = rosterKey;
+      }
+      const peersKey = JSON.stringify(profiles);
+      if (peersKey !== renderedPeersKey) {
+        renderedPeersKey = peersKey;
+        onPeers(profiles);
+      }
+      setStatus(profiles.length ? 'live' : 'ready', profiles.length ? '' : 'Room ready. Share the invite to study together.');
+    }
+
+    function scheduleUpdate() {
+      if (pendingUpdate || closed || !connected) return;
+      pendingUpdate = setTimeout(() => {
+        pendingUpdate = undefined;
+        if (!guest) {
+          broadcastRoster();
+          return;
+        }
+        if (!host.open || sentProfileKey === currentProfileKey) return;
+        if (!hasCapacity(host)) {
+          scheduleUpdate();
+          return;
+        }
+        host.send({ type: 'profile', profile: currentProfile });
+        sentProfileKey = currentProfileKey;
+      }, updateInterval);
     }
 
     function removeClient(client) {
@@ -121,7 +189,7 @@
       if (clients.get(client.connection.peer) !== client) return;
       clients.delete(client.connection.peer);
       client.connection.close();
-      if (client.profile) broadcastRoster();
+      if (client.profile) scheduleUpdate();
     }
 
     async function receiveGuest(client, message) {
@@ -134,7 +202,7 @@
         if (message.type === 'profile') {
           client.lastSeen = Date.now();
           client.profile = participant(message.profile, client.profile.id);
-          broadcastRoster();
+          scheduleUpdate();
         }
         return;
       }
@@ -169,7 +237,7 @@
       clearTimeout(client.timeout);
       client.lastSeen = Date.now();
       client.profile = profile;
-      broadcastRoster();
+      scheduleUpdate();
     }
 
     function acceptGuest(connection) {
@@ -209,6 +277,7 @@
             if (closed) return;
             verified = true;
             host.send({ type: 'join', proof: claim, profile: currentProfile });
+            sentProfileKey = currentProfileKey;
             return;
           }
           if (!verified) return;
@@ -229,7 +298,8 @@
           clearTimeout(deadline);
           connected = true;
           onPeers([...unique.values()]);
-          onStatus('live');
+          setStatus('live');
+          if (sentProfileKey !== currentProfileKey) scheduleUpdate();
         } catch {
           fail('Room connection failed. Open the invite again to retry.');
         }
@@ -245,7 +315,7 @@
 
     async function start() {
       if (closed) return;
-      onStatus('connecting', guest ? 'Connecting to the host…' : 'Opening your room…');
+      setStatus('connecting', guest ? 'Connecting to the host…' : 'Opening your room…');
       onPeers([]);
       if (!roomKinds.has(kind) || !crypto.subtle || !currentProfile) {
         fail('Live rooms require a secure browser connection.');
@@ -293,10 +363,12 @@
       close,
       update(nextIdentity) {
         if (closed || !currentProfile) return;
-        currentProfile = participant(nextIdentity, currentProfile.id);
-        if (!connected || closed) return;
-        if (guest && host.open) host.send({ type: 'profile', profile: currentProfile });
-        if (!guest) broadcastRoster();
+        const updated = participant({ ...currentProfile, ...nextIdentity }, currentProfile.id);
+        const updatedKey = JSON.stringify(updated);
+        if (updatedKey === currentProfileKey) return;
+        currentProfile = updated;
+        currentProfileKey = updatedKey;
+        scheduleUpdate();
       },
       shareUrl() {
         if (!connected || closed) return null;
