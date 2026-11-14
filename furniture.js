@@ -6,6 +6,7 @@ export function createLibrary(THREE, roomMode = "quiet") {
   const seats = [];
   const points = {};
   const pieces = [];
+  const walls = {};
   const materials = new Map();
   const unitBox = new THREE.BoxGeometry(1, 1, 1);
   let randomSeed = 16;
@@ -82,9 +83,10 @@ export function createLibrary(THREE, roomMode = "quiet") {
     group.add(tiles);
   }
 
-  function assemblePieces() {
+  function assemblePieces(source = pieces, target = group) {
     for (const shadows of [true, false]) {
-      const batch = pieces.filter(piece => piece.castShadow === shadows);
+      const batch = source.filter(piece => piece.castShadow === shadows);
+      if (!batch.length) continue;
       const items = new THREE.InstancedMesh(unitBox, finish(0xffffff), batch.length);
       for (const [index, piece] of batch.entries()) {
         piece.updateMatrix();
@@ -93,7 +95,7 @@ export function createLibrary(THREE, roomMode = "quiet") {
       }
       items.castShadow = shadows;
       items.receiveShadow = true;
-      group.add(items);
+      target.add(items);
     }
   }
 
@@ -208,9 +210,15 @@ export function createLibrary(THREE, roomMode = "quiet") {
   function shell() {
     const westX = -10.95;
     const backZ = -7.94;
+    walls.west = new THREE.Group();
+    walls.north = new THREE.Group();
+    group.add(walls.west, walls.north);
+    const westStart = pieces.length;
     box(westX, 1.32, 0, .2, 2.64, 16, palette.ivory);
     box(westX + .11, .105, 0, .075, .21, 15.95, palette.walnut);
     box(westX, 2.68, 0, .24, .1, 16.03, palette.cream);
+    assemblePieces(pieces.splice(westStart), walls.west);
+    const northStart = pieces.length;
     box(0, .27, backZ, 22, .54, .2, palette.ivory);
     box(0, .515, backZ + .03, 22, .09, .27, palette.maple);
     box(0, 3.45, backZ, 22, .15, .23, palette.cream);
@@ -219,6 +227,7 @@ export function createLibrary(THREE, roomMode = "quiet") {
       new THREE.MeshBasicMaterial({ map: landscape() }), 0, 1.95, backZ - .055,
     );
     window.castShadow = false;
+    walls.north.add(window);
 
     for (let bay = 0; bay <= 9; bay += 1) {
       const x = -10.90 + bay * 21.8 / 9;
@@ -228,6 +237,7 @@ export function createLibrary(THREE, roomMode = "quiet") {
     }
     box(0, 1.12, backZ + .036, 21.6, .054, .105, 0x684e3a);
     box(0, 3.33, backZ + .036, 21.6, .055, .112, 0x684e3a);
+    assemblePieces(pieces.splice(northStart), walls.north);
   }
 
   function bookshelf(z, width) {
@@ -395,13 +405,13 @@ export function createLibrary(THREE, roomMode = "quiet") {
 
   function cafe() {
     rug(-2.9, .6, 10.8, 8.0, 0xb46956, true);
-    couch(-4.35, -3.22, 3.8, "lounge", "Lounge seat", palette.leather);
-    couch(2.45, -3.27, 3.8, "lounge-east", "Lounge seat", palette.oliveDark);
+    couch(-4.35, -3.22, 3.8, "lounge", "왼쪽 소파", palette.leather);
+    couch(2.45, -3.27, 3.8, "lounge-east", "오른쪽 소파", palette.oliveDark);
     coffeeTable(-4.35, -1.60);
     coffeeTable(2.45, -1.60);
-    desk(-4.10, 2.37, 3.45, 2, "cafe", "Cafe seat", 1.03);
-    desk(3.45, 2.37, 3.45, 2, "cafe-east", "Cafe seat", 1.03);
-    couch(4.80, -7.15, 4.3, "window", "Window seat");
+    desk(-4.10, 2.37, 3.45, 2, "cafe", "왼쪽 카페 테이블", 1.03);
+    desk(3.45, 2.37, 3.45, 2, "cafe-east", "오른쪽 카페 테이블", 1.03);
+    couch(4.80, -7.15, 4.3, "window", "창가 좌석");
     points.window = { x: 4.80, z: -6.20 };
     points.table = { x: -4.1, z: 3.86 };
   }
@@ -414,10 +424,10 @@ export function createLibrary(THREE, roomMode = "quiet") {
       [-3.98, -3.28, 5.9, 4], [-3.34, .16, 6.9, 5], [-2.26, 3.62, 7.1, 5],
     ];
     studyTables.forEach(([x, z, width, count], index) => {
-      desk(x, z, width, count, `desk-${index + 1}`, `Table ${index + 1} seat`);
+      desk(x, z, width, count, `desk-${index + 1}`, `${index + 1}번 테이블 좌석`);
     });
     points.table = { x: 1.9, z: 4.85 };
-    couch(4.9, -7.15, 4.7, "window", "Window seat");
+    couch(4.9, -7.15, 4.7, "window", "창가 좌석");
     points.window = { x: 4.9, z: -6.20 };
     if (roomMode === "module") {
       box(7.65, 1.40, -7.25, 2.60, 1.10, .10, palette.walnut);
@@ -426,7 +436,7 @@ export function createLibrary(THREE, roomMode = "quiet") {
       box(7.65, .42, -7.25, 2.65, .84, .36, palette.walnut);
       obstacle(7.65, -7.25, 2.65, .39);
     } else {
-      desk(6.8, -3.72, 3.1, 2, "carrel", "Window desk", .92, true);
+      desk(6.8, -3.72, 3.1, 2, "carrel", "창가 책상 좌석", .92, true);
     }
   }
 
@@ -445,5 +455,5 @@ export function createLibrary(THREE, roomMode = "quiet") {
   points.rug = { x: 6.45, z: 6.12 };
   assemblePieces();
 
-  return { group, ground, obstacles, seats, bounds, points, spawn: { x: 6.45, z: 6.12 } };
+  return { group, ground, walls, obstacles, seats, bounds, points, spawn: { x: 6.45, z: 6.12 } };
 }

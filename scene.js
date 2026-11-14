@@ -10,13 +10,13 @@
   const locationState = document.querySelector("#scene-location-status");
   const seatButtons = [...document.querySelectorAll("[data-seat].scene-seat")];
   const zone = "Asia/Singapore";
-  const timeFormat = new Intl.DateTimeFormat("en-GB", {
+  const timeFormat = new Intl.DateTimeFormat("ko-KR", {
     timeZone: zone, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
   });
-  const dateFormat = new Intl.DateTimeFormat("en-GB", {
+  const dateFormat = new Intl.DateTimeFormat("ko-KR", {
     timeZone: zone, weekday: "short", day: "numeric", month: "short",
   });
-  const names = { quiet: "Quiet reading room", module: "Module study room", break: "Break room" };
+  const names = { quiet: "조용한 열람실", module: "과목 스터디룸", break: "휴게실" };
 
   if (location.hash.startsWith("#session=")) {
     location.replace(new URL(`./campus.html${location.hash}`, location.href));
@@ -39,7 +39,7 @@
       peerLayer.replaceChildren();
     }
     const seat = seatButtons.find(button => button.dataset.seat === character.dataset.seat);
-    locationState.textContent = roomPhase === "active" ? seat?.textContent.trim() || "Inside the room" : "At the entrance";
+    locationState.textContent = roomPhase === "active" ? seat?.textContent.trim() || "방에 입장했어요" : "입구";
   }
 
   function showPeers() {
@@ -55,9 +55,7 @@
       name.removeAttribute("id");
       name.textContent = seat.querySelector(".room-seat-name").textContent;
       const look = seat.querySelector(".room-seat-avatar").dataset;
-      Object.assign(avatar.dataset, {
-        avatar: look.avatar, hair: look.hair, hairStyle: "short", glasses: "false", headphones: "false",
-      });
+      Object.assign(avatar.dataset, look);
       return peer;
     });
     peerLayer.replaceChildren(...previews);

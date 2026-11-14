@@ -1,24 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="An online reading room for NTU students. Choose a character, take a seat, and study alongside friends.">
+  <meta name="description" content="NTU 학생을 위한 온라인 열람실. 캐릭터를 꾸미고 자리에 앉아 친구들과 공부하세요.">
   <meta name="theme-color" content="#263a32">
-  <title>StudyKaki · NTU Study Room</title>
+  <title>StudyKaki · NTU 온라인 열람실</title>
   <link rel="icon" href="./mark.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./scene.css?v=walk-2">
+  <link rel="stylesheet" href="./style.css?v=ko-1">
+  <link rel="stylesheet" href="./scene.css?v=ko-1">
   <script src="./vendor/three-r160.min.js" defer></script>
-  <script src="./room-connect.js?v=walk-2" defer></script>
-  <script src="./rooms.js?v=walk-2" defer></script>
-  <script src="./focus.js" defer></script>
+  <script src="./room-connect.js?v=ko-1" defer></script>
+  <script src="./rooms.js?v=ko-1" defer></script>
+  <script src="./focus.js?v=ko-1" defer></script>
   <script src="./walk.js" defer></script>
-  <script src="./scene.js?v=walk-2" defer></script>
-  <script src="./library.js?v=walk-2" type="module"></script>
+  <script src="./scene.js?v=ko-1" defer></script>
+  <script src="./library.js?v=ko-1" type="module"></script>
 </head>
 <body class="room-app" data-room-phase="profile" data-scene-room="quiet">
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -36,25 +36,25 @@
     <symbol id="i-grid" viewBox="0 0 24 24"><rect x="5" y="5" width="5" height="5" rx="1"/><rect x="14" y="5" width="5" height="5" rx="1"/><rect x="5" y="14" width="5" height="5" rx="1"/><rect x="14" y="14" width="5" height="5" rx="1"/></symbol>
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   </svg>
-  <main class="study-scene" aria-label="StudyKaki virtual library">
+  <main class="study-scene" aria-label="StudyKaki 가상 도서관">
     <div id="scene-3d" aria-hidden="true"></div>
     <div class="scene-wall" aria-hidden="true"></div>
     <div class="scene-vignette" aria-hidden="true"></div>
     <div class="scene-rug" aria-hidden="true"></div>
 
     <header class="room-clock">
-      <a class="brand" href="./" title="StudyKaki entrance"><img src="./mark.svg" width="30" height="30" alt=""><span>StudyKaki<span class="brand-dot">.</span></span></a>
-      <time id="scene-time" aria-label="Singapore time">--:--:--</time>
-      <div class="scene-date"><span id="scene-date">Singapore time</span><span>SGT</span></div>
+      <a class="brand" href="./" title="StudyKaki 입구"><img src="./mark.svg" width="30" height="30" alt=""><span>StudyKaki<span class="brand-dot">.</span></span></a>
+      <time id="scene-time" aria-label="싱가포르 시간">--:--:--</time>
+      <div class="scene-date"><span id="scene-date">싱가포르 시간</span><span>SGT</span></div>
     </header>
 
-    <aside class="scene-location" aria-label="Current room">
+    <aside class="scene-location" aria-label="현재 방">
       <span class="location-dot"></span>
-      <div><strong id="scene-location-name">Quiet reading room</strong><small id="scene-location-status">At the entrance</small></div>
+      <div><strong id="scene-location-name">조용한 열람실</strong><small id="scene-location-status">입구</small></div>
     </aside>
 
     <div id="scene-character" class="scene-character" aria-hidden="true">
-      <span id="scene-avatar-name" class="scene-name">Study Kaki</span>
+      <span id="scene-avatar-name" class="scene-name">스터디 친구</span>
       <div id="scene-avatar" class="kaki-avatar" data-avatar="gold" data-hair="dark" data-hair-style="short">
         <span class="avatar-shadow"></span>
         <span class="avatar-feet"></span>
@@ -64,118 +64,146 @@
         <span class="avatar-hair"></span>
         <span class="avatar-glasses"></span>
         <span class="avatar-headphones"></span>
+        <span class="avatar-cap"></span>
+        <span class="avatar-earrings"></span>
       </div>
     </div>
     <div id="scene-peers" aria-hidden="true"></div>
 
-    <div class="scene-hotspots" aria-label="Move your character">
-      <button type="button" data-seat="window" class="scene-seat scene-seat-window">Window seat</button>
-      <button type="button" data-seat="table" class="scene-seat scene-seat-table">Study table</button>
-      <button type="button" data-seat="rug" class="scene-seat scene-seat-rug">Entrance</button>
+    <div class="scene-hotspots" aria-label="캐릭터 이동">
+      <button type="button" data-seat="window" class="scene-seat scene-seat-window">창가 자리</button>
+      <button type="button" data-seat="table" class="scene-seat scene-seat-table">공부 책상</button>
+      <button type="button" data-seat="rug" class="scene-seat scene-seat-rug">입구</button>
     </div>
-    <p id="scene-controls" class="scene-controls" hidden>Click the floor to walk <span>·</span> WASD or arrows <span>·</span> Click a chair or press E to sit</p>
+    <p id="scene-controls" class="scene-controls" hidden>바닥 클릭 또는 WASD로 이동 <span>·</span> 의자 클릭 또는 E로 앉기</p>
     <p id="walk-status" class="sr-only" role="status"></p>
+    <div id="camera-toolbar" class="camera-toolbar" role="group" aria-label="카메라 시점" hidden>
+      <button type="button" data-camera="left" aria-label="왼쪽으로 회전" title="왼쪽으로 회전">↶</button>
+      <button type="button" data-camera="right" aria-label="오른쪽으로 회전" title="오른쪽으로 회전">↷</button>
+      <button type="button" data-camera="out" aria-label="축소" title="축소">−</button>
+      <button type="button" data-camera="in" aria-label="확대" title="확대">+</button>
+      <button type="button" data-camera="reset" aria-label="시점 초기화" title="시점 초기화">초기화</button>
+      <span class="camera-hint">휠·핀치로 확대/축소, 드래그로 회전</span>
+      <span class="sr-only" id="camera-status" role="status"></span>
+    </div>
 
-    <section id="room-dialog" class="room-panel" aria-label="Study room">
+    <section id="room-dialog" class="room-panel" aria-label="열람실">
       <div id="room-entry">
         <form id="room-form">
           <div id="room-profile-step">
-            <p class="step-label">01 / 02 <span></span> YOUR CHARACTER</p>
-            <h1 id="room-title">Ready to study?</h1>
-            <p class="room-intro">Make a character, then take a seat in the NTU study room.</p>
+            <p class="step-label">01 / 02 <span></span> 캐릭터 꾸미기</p>
+            <h1 id="room-title">오늘은 뭘 공부할까요?</h1>
+            <p class="room-intro">캐릭터를 꾸미고 NTU 열람실에서 자리를 골라 보세요.</p>
             <div class="profile-fields">
-              <label>Name<input name="name" maxlength="28" required placeholder="Your name" autocomplete="off"></label>
-              <label>Year<select name="year" required><option value="">Select year</option><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option><option value="5+">Year 5+</option><option value="postgraduate">Postgraduate</option><option value="exchange">Exchange</option></select></label>
-              <label class="profile-full">School or major<input name="school" maxlength="90" required placeholder="e.g. Biomedical Engineering"></label>
+              <label>이름<input name="name" maxlength="28" required placeholder="이름을 입력하세요" autocomplete="off"></label>
+              <label>학년<select name="year" required><option value="">학년 선택</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option><option value="4">4학년</option><option value="5+">5학년 이상</option><option value="postgraduate">대학원생</option><option value="exchange">교환학생</option></select></label>
+              <label class="profile-full">학과·전공<input name="school" maxlength="90" required placeholder="예: 의공학"></label>
             </div>
             <fieldset class="avatar-options">
-              <legend>Outfit colour</legend>
-              <label title="Gold"><input type="radio" name="avatar" value="gold" checked aria-label="Gold"><span class="swatch swatch-gold"></span></label>
-              <label title="Terracotta"><input type="radio" name="avatar" value="terracotta" aria-label="Terracotta"><span class="swatch swatch-terracotta"></span></label>
-              <label title="Sage"><input type="radio" name="avatar" value="sage" aria-label="Sage"><span class="swatch swatch-sage"></span></label>
-              <label title="Indigo"><input type="radio" name="avatar" value="indigo" aria-label="Indigo"><span class="swatch swatch-indigo"></span></label>
+              <legend>옷 색</legend>
+              <label title="겨자색"><input type="radio" name="avatar" value="gold" checked aria-label="겨자색"><span class="swatch swatch-gold"></span></label>
+              <label title="벽돌색"><input type="radio" name="avatar" value="terracotta" aria-label="벽돌색"><span class="swatch swatch-terracotta"></span></label>
+              <label title="세이지"><input type="radio" name="avatar" value="sage" aria-label="세이지"><span class="swatch swatch-sage"></span></label>
+              <label title="보라색"><input type="radio" name="avatar" value="indigo" aria-label="보라색"><span class="swatch swatch-indigo"></span></label>
+              <label title="남색"><input type="radio" name="avatar" value="navy" aria-label="남색"><span class="swatch swatch-navy"></span></label>
+              <label title="코랄"><input type="radio" name="avatar" value="coral" aria-label="코랄"><span class="swatch swatch-coral"></span></label>
+              <label title="민트"><input type="radio" name="avatar" value="mint" aria-label="민트"><span class="swatch swatch-mint"></span></label>
+              <label title="차콜"><input type="radio" name="avatar" value="charcoal" aria-label="차콜"><span class="swatch swatch-charcoal"></span></label>
             </fieldset>
             <fieldset class="avatar-options hair-styles">
-              <legend>Hairstyle</legend>
-              <label><input type="radio" name="hairStyle" value="short" checked><span>Short</span></label>
-              <label><input type="radio" name="hairStyle" value="bob"><span>Bob</span></label>
-              <label><input type="radio" name="hairStyle" value="bun"><span>Bun</span></label>
+              <legend>머리 모양</legend>
+              <label><input type="radio" name="hairStyle" value="short" checked><span>짧은 머리</span></label>
+              <label><input type="radio" name="hairStyle" value="bob"><span>단발</span></label>
+              <label><input type="radio" name="hairStyle" value="bun"><span>올림머리</span></label>
+              <label><input type="radio" name="hairStyle" value="pony"><span>포니테일</span></label>
+              <label><input type="radio" name="hairStyle" value="curls"><span>곱슬머리</span></label>
+              <label><input type="radio" name="hairStyle" value="shaved"><span>반삭</span></label>
             </fieldset>
             <fieldset class="avatar-options">
-              <legend>Hair colour</legend>
-              <label title="Dark"><input type="radio" name="hair" value="dark" checked aria-label="Dark"><span class="swatch swatch-dark"></span></label>
-              <label title="Brown"><input type="radio" name="hair" value="brown" aria-label="Brown"><span class="swatch swatch-brown"></span></label>
-              <label title="Blond"><input type="radio" name="hair" value="blond" aria-label="Blond"><span class="swatch swatch-blond"></span></label>
-              <label title="Rose"><input type="radio" name="hair" value="rose" aria-label="Rose"><span class="swatch swatch-rose"></span></label>
-              <label title="Slate"><input type="radio" name="hair" value="slate" aria-label="Slate"><span class="swatch swatch-slate"></span></label>
+              <legend>머리 색</legend>
+              <label title="검정"><input type="radio" name="hair" value="dark" checked aria-label="검정"><span class="swatch swatch-dark"></span></label>
+              <label title="갈색"><input type="radio" name="hair" value="brown" aria-label="갈색"><span class="swatch swatch-brown"></span></label>
+              <label title="금발"><input type="radio" name="hair" value="blond" aria-label="금발"><span class="swatch swatch-blond"></span></label>
+              <label title="장밋빛"><input type="radio" name="hair" value="rose" aria-label="장밋빛"><span class="swatch swatch-rose"></span></label>
+              <label title="회청색"><input type="radio" name="hair" value="slate" aria-label="회청색"><span class="swatch swatch-slate"></span></label>
+              <label title="적갈색"><input type="radio" name="hair" value="auburn" aria-label="적갈색"><span class="swatch swatch-auburn"></span></label>
+              <label title="은빛"><input type="radio" name="hair" value="silver" aria-label="은빛"><span class="swatch swatch-silver"></span></label>
+              <label title="파란색"><input type="radio" name="hair" value="blue" aria-label="파란색"><span class="swatch swatch-blue"></span></label>
             </fieldset>
-            <div class="accessories"><label><input type="checkbox" name="glasses"> Glasses</label><label><input type="checkbox" name="headphones"> Headphones</label></div>
+            <fieldset class="avatar-options">
+              <legend>피부 톤</legend>
+              <label title="아이보리"><input type="radio" name="skin" value="light" aria-label="아이보리"><span class="swatch swatch-light"></span></label>
+              <label title="피치"><input type="radio" name="skin" value="medium" checked aria-label="피치"><span class="swatch swatch-medium"></span></label>
+              <label title="캐러멜"><input type="radio" name="skin" value="tan" aria-label="캐러멜"><span class="swatch swatch-tan"></span></label>
+              <label title="코코아"><input type="radio" name="skin" value="deep" aria-label="코코아"><span class="swatch swatch-deep"></span></label>
+            </fieldset>
+            <div class="accessories"><label><input type="checkbox" name="glasses"> 안경</label><label><input type="checkbox" name="headphones"> 헤드폰</label><label class="extra-accessory">소품 <select name="accessory"><option value="none">없음</option><option value="cap">모자</option><option value="earrings">귀걸이</option></select></label></div>
             <span id="room-avatar-preview" hidden aria-hidden="true"></span>
-            <p class="private-note">Your name and avatar appear to friends in a shared room. Your major and year stay in this browser.</p>
-            <button type="button" class="game-button game-primary" data-room-next>Next: choose a room <svg class="icon"><use href="#i-arrow"/></svg></button>
+            <p class="private-note">온라인 방에서는 참여자에게 이름과 캐릭터가 보입니다. 전공과 학년은 이 브라우저에 저장됩니다.</p>
+            <button type="button" class="game-button game-primary" data-room-next>다음 · 방 고르기 <svg class="icon"><use href="#i-arrow"/></svg></button>
           </div>
           <div id="room-choice-step" hidden>
-            <p class="step-label">02 / 02 <span></span> PICK A ROOM</p>
-            <h2>Where to?</h2>
+            <p class="step-label">02 / 02 <span></span> 방 고르기</p>
+            <h2>어디에서 공부할까요?</h2>
             <p id="room-invite-notice" class="room-notice" hidden></p>
-            <p class="room-intro">Pick a place to focus. You can copy an invite once you're inside.</p>
-            <label class="room-select">Choose a room
-              <select name="room"><option value="quiet">Quiet reading room</option><option value="module">Module study room</option><option value="break">Break room</option></select>
+            <p class="room-intro">방을 고르고 입장하세요. 친구에게 방 초대 링크를 보낼 수 있어요.</p>
+            <label class="room-select">방 선택
+              <select name="room"><option value="quiet">조용한 열람실</option><option value="module">과목 스터디룸</option><option value="break">휴게실</option></select>
             </label>
             <p id="room-error" class="form-error" role="alert" hidden></p>
             <div class="game-actions">
-              <button type="button" class="game-button game-secondary" data-room-back>Back</button>
-              <button type="submit" class="game-button game-primary">Enter room <svg class="icon"><use href="#i-arrow"/></svg></button>
+              <button type="button" class="game-button game-secondary" data-room-back>이전</button>
+              <button type="submit" class="game-button game-primary">입장하기 <svg class="icon"><use href="#i-arrow"/></svg></button>
             </div>
           </div>
         </form>
       </div>
       <div id="room-space" hidden>
         <div class="room-header"><h2 id="room-name"></h2><p id="room-state" role="status"></p></div>
-        <ul id="room-chair-grid" aria-label="Study room seats"></ul>
+        <ul id="room-chair-grid" aria-label="열람실 자리"></ul>
         <form id="room-goal-form">
-          <label class="goal-label" for="room-goal">My study goal</label>
+          <label class="goal-label" for="room-goal">오늘의 공부 목표</label>
           <div class="room-goal-row">
-            <input id="room-goal" maxlength="120" placeholder="e.g. Finish two tutorial questions">
-            <button class="game-button game-secondary" type="submit">Set</button>
+            <input id="room-goal" maxlength="120" placeholder="예: 튜토리얼 문제 두 개 풀기">
+            <button class="game-button game-secondary" type="submit">저장</button>
           </div>
         </form>
         <p id="room-goal-title" class="form-help" hidden></p>
         <div class="game-actions in-room-actions">
-          <button id="room-connect" class="game-button game-primary" type="button">Go online</button>
-          <button id="room-share" class="game-button game-secondary" type="button">Copy room link</button>
-          <button id="room-exit" class="game-button game-secondary" type="button">Leave</button>
+          <button id="room-connect" class="game-button game-primary" type="button">온라인 연결</button>
+          <button id="room-share" class="game-button game-secondary" type="button">방 링크 복사</button>
+          <button id="room-exit" class="game-button game-secondary" type="button">나가기</button>
         </div>
-        <label id="room-copy-fallback" class="room-copy-fallback" hidden>Copy the invite link
+        <label id="room-copy-fallback" class="room-copy-fallback" hidden>초대 링크를 복사하세요
           <input id="room-copy-url" type="url" readonly>
         </label>
-        <p id="room-connect-note" class="private-note">Go online to share a live invite. Keep the host tab open.</p>
+        <p id="room-connect-note" class="private-note">온라인에 연결한 뒤 친구를 초대하세요. 방을 유지하려면 호스트 탭을 열어 두세요.</p>
       </div>
     </section>
 
-    <nav class="scene-tools" aria-label="Study tools">
-      <button class="tool-pill" type="button" data-open-focus><svg class="icon"><use href="#i-clock"/></svg><span>Focus timer</span></button>
-      <a class="tool-pill" href="./campus.html"><svg class="icon"><use href="#i-calendar"/></svg><span>Campus sessions</span></a>
+    <nav class="scene-tools" aria-label="공부 도구">
+      <button class="tool-pill" type="button" data-open-focus><svg class="icon"><use href="#i-clock"/></svg><span>집중 타이머</span></button>
+      <a class="tool-pill" href="./campus.html"><svg class="icon"><use href="#i-calendar"/></svg><span>캠퍼스 모임</span></a>
     </nav>
-    <noscript><p class="room-panel">Enable JavaScript to enter the study room.</p></noscript>
+    <noscript><p class="room-panel">열람실에 입장하려면 JavaScript를 켜 주세요.</p></noscript>
   </main>
   <dialog id="focus-dialog" aria-labelledby="focus-title">
     <div class="dialog-inner">
-      <div class="dialog-head"><h2 id="focus-title">Focus timer</h2><form method="dialog"><button type="submit" class="icon-button" aria-label="Close focus timer"><svg class="icon"><use href="#i-close"/></svg></button></form></div>
-      <div class="timer-modes" aria-label="Timer mode"><button type="button" data-timer-mode="focus" aria-pressed="true">Focus</button><button type="button" data-timer-mode="break" aria-pressed="false">5-min break</button></div>
-      <div id="timer-display" class="timer-display" role="timer" aria-label="Time remaining">25:00</div>
-      <div class="timer-presets" aria-label="Focus duration"><button type="button" data-focus-minutes="25" aria-pressed="true">25m</button><button type="button" data-focus-minutes="50" aria-pressed="false">50m</button><button type="button" data-focus-minutes="75" aria-pressed="false">75m</button></div>
-      <label class="goal-label">What will you work on?<input id="focus-goal" maxlength="140" placeholder="e.g. Finish the Week 8 tutorial"></label>
-      <div class="timer-actions"><button class="button button-primary" id="timer-toggle" type="button">Start</button><button class="button button-secondary" id="timer-reset" type="button">Reset</button></div>
+      <div class="dialog-head"><h2 id="focus-title">집중 타이머</h2><form method="dialog"><button type="submit" class="icon-button" aria-label="집중 타이머 닫기"><svg class="icon"><use href="#i-close"/></svg></button></form></div>
+      <div class="timer-modes" aria-label="타이머 모드"><button type="button" data-timer-mode="focus" aria-pressed="true">집중</button><button type="button" data-timer-mode="break" aria-pressed="false">5분 휴식</button></div>
+      <div id="timer-display" class="timer-display" role="timer" aria-label="남은 시간">25:00</div>
+      <div class="timer-presets" aria-label="집중 시간"><button type="button" data-focus-minutes="25" aria-pressed="true">25분</button><button type="button" data-focus-minutes="50" aria-pressed="false">50분</button><button type="button" data-focus-minutes="75" aria-pressed="false">75분</button></div>
+      <label class="goal-label">무엇을 공부할까요?<input id="focus-goal" maxlength="140" placeholder="예: 8주차 튜토리얼 끝내기"></label>
+      <div class="timer-actions"><button class="button button-primary" id="timer-toggle" type="button">시작</button><button class="button button-secondary" id="timer-reset" type="button">초기화</button></div>
       <p id="focus-summary" class="focus-summary"></p><p id="timer-status" class="timer-status" role="status"></p>
       <div class="focus-tasks">
-        <h3>Study checklist</h3>
+        <h3>공부 체크리스트</h3>
         <form id="focus-task-form">
-          <label class="sr-only" for="focus-task-input">New study task</label>
-          <input id="focus-task-input" maxlength="100" placeholder="Add a task" required>
-          <button class="button button-secondary" type="submit">Add task</button>
+          <label class="sr-only" for="focus-task-input">새 할 일</label>
+          <input id="focus-task-input" maxlength="100" placeholder="할 일을 입력하세요" required>
+          <button class="button button-secondary" type="submit">추가</button>
         </form>
-        <ul id="focus-task-list" aria-label="Study checklist"></ul>
+        <ul id="focus-task-list" aria-label="공부 체크리스트"></ul>
       </div>
     </div>
   </dialog>

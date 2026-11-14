@@ -25,13 +25,15 @@
   const inviteNotice = dialog.querySelector("#room-invite-notice");
   const error = dialog.querySelector("#room-error");
   const rooms = {
-    quiet: "Quiet reading room",
-    module: "Module study room",
-    break: "Break room",
+    quiet: "조용한 열람실",
+    module: "과목 스터디룸",
+    break: "휴게실",
   };
-  const avatars = new Set(["terracotta", "sage", "indigo", "gold"]);
-  const hairColors = new Set(["dark", "brown", "blond", "rose", "slate"]);
-  const hairStyles = new Set(["short", "bob", "bun"]);
+  const avatars = new Set(["terracotta", "sage", "indigo", "gold", "navy", "coral", "mint", "charcoal"]);
+  const hairColors = new Set(["dark", "brown", "blond", "rose", "slate", "auburn", "silver", "blue"]);
+  const hairStyles = new Set(["short", "bob", "bun", "pony", "curls", "shaved"]);
+  const skinTones = new Set(["light", "medium", "tan", "deep"]);
+  const accessories = new Set(["none", "cap", "earrings", "glasses"]);
   const storageKey = "studykaki-room-v1";
   const seatCount = 8;
   const codes = /^[a-f0-9]{16}$/;
@@ -76,6 +78,8 @@
     return {
       id: data.id, name, avatar: data.avatar, hair: chosenHair(data.hair),
       hairStyle: hairStyles.has(data.hairStyle) ? data.hairStyle : "short",
+      skin: skinTones.has(data.skin) ? data.skin : "medium",
+      accessory: accessories.has(data.accessory) ? data.accessory : "none",
       glasses: data.glasses === true, headphones: data.headphones === true, position: safePosition,
     };
   }
@@ -114,13 +118,25 @@
   }
 
   function appearance() {
+    const skin = field("skin")?.value;
+    const accessory = field("accessory")?.value;
     return {
       avatar: avatars.has(field("avatar").value) ? field("avatar").value : "terracotta",
       hair: chosenHair(field("hair")?.value),
       hairStyle: chosenStyle(),
+      skin: skinTones.has(skin) ? skin : "medium",
+      accessory: accessories.has(accessory) ? accessory : "none",
       glasses: Boolean(field("glasses")?.checked),
       headphones: Boolean(field("headphones")?.checked),
     };
+  }
+
+  function paintCharacter(node, look) {
+    const { avatar, hair, hairStyle, skin, accessory, glasses, headphones } = look;
+    Object.assign(node.dataset, {
+      avatar, hair, hairStyle, skin, accessory,
+      glasses: String(glasses), headphones: String(headphones),
+    });
   }
 
   function sceneKind() {
@@ -131,14 +147,10 @@
     const look = appearance();
     for (const avatar of [avatarPreview, sceneAvatar]) {
       if (!avatar) continue;
-      avatar.dataset.avatar = look.avatar;
-      avatar.dataset.hair = look.hair;
-      avatar.dataset.hairStyle = look.hairStyle;
-      avatar.dataset.glasses = String(look.glasses);
-      avatar.dataset.headphones = String(look.headphones);
+      paintCharacter(avatar, look);
     }
     if (sceneAvatarName) {
-      sceneAvatarName.textContent = displayName(field("name").value) || "Study Kaki";
+      sceneAvatarName.textContent = displayName(field("name").value) || "스터디 친구";
     }
   }
 
@@ -157,7 +169,7 @@
     for (const name of ["name", "school", "year"]) {
       const control = field(name);
       if (control?.required && (!control.value.trim() || !control.checkValidity())) {
-        control.setCustomValidity(control.value.trim() ? "" : "Enter a value for this field.");
+        control.setCustomValidity(control.value.trim() ? "" : "이 항목을 입력해 주세요.");
         control.reportValidity();
         return false;
       }
@@ -181,28 +193,15 @@
     const character = document.createElement("span");
     character.className = "room-seat-avatar";
     character.setAttribute("aria-hidden", "true");
-    if (person) {
-      character.dataset.avatar = person.avatar;
-      character.dataset.hair = person.hair;
-      if (isYou) Object.assign(character.dataset, previewDataset());
-    }
+    if (person) paintCharacter(character, person);
     const name = document.createElement("span");
     name.className = "room-seat-name";
-    name.textContent = person?.name || "Open seat";
+    name.textContent = person?.name || "빈자리";
     const caption = document.createElement("small");
     caption.className = "room-seat-status";
-    caption.textContent = !person ? "Available" : isYou ? "You" : "Here";
+    caption.textContent = !person ? "이용 가능" : isYou ? "나" : "접속 중";
     seat.append(character, name, caption);
     return seat;
-  }
-
-  function previewDataset() {
-    const look = appearance();
-    return {
-      hairStyle: look.hairStyle,
-      glasses: String(look.glasses),
-      headphones: String(look.headphones),
-    };
   }
 
   function renderRoom() {
@@ -211,30 +210,30 @@
     chairGrid.replaceChildren(...Array.from({ length: Math.max(seatCount, people.length) },
       (_, index) => seatNode(people[index], index === 0)));
 
-    if (transportStatus === "connecting") status.textContent = "Connecting to the shared room…";
-    else if (transportStatus === "ready") status.textContent = "Online. Waiting for your study kakis.";
+    if (transportStatus === "connecting") status.textContent = "온라인 방에 연결 중…";
+    else if (transportStatus === "ready") status.textContent = "연결됐어요. 친구를 기다리는 중이에요.";
     else if (transportStatus === "live") {
       const others = remotePeers.length;
-      status.textContent = others ? `${others} ${others === 1 ? "person" : "people"} here with you` :
-        "Connected. Waiting for your study kakis.";
-    } else status.textContent = "You’re studying solo.";
+      status.textContent = others ? `${others}명과 함께 공부 중` :
+        "연결됐어요. 친구를 기다리는 중이에요.";
+    } else status.textContent = "혼자 공부 중";
 
     if (connectButton) {
       connectButton.hidden = !adapter() || transportStatus === "ready" || transportStatus === "live";
       connectButton.disabled = transportStatus === "connecting";
-      connectButton.textContent = transportStatus === "connecting" ? "Connecting…" :
-        transportStatus === "failed" ? "Retry connection" : room.invited ? "Join live room" : "Go online";
+      connectButton.textContent = transportStatus === "connecting" ? "연결 중…" :
+        transportStatus === "failed" ? "다시 연결" : room.invited ? "온라인 방 참여" : "온라인 연결";
     }
     if (shareButton) shareButton.textContent = transportStatus === "ready" || transportStatus === "live" ?
-      "Copy live invite" : "Copy room link";
+      "초대 링크 복사" : "방 링크 복사";
     if (connectNote) {
       const messages = {
-        idle: adapter() ? "Connect to share this room. People who join can see your room nickname and avatar." :
-          "This room works locally. Anyone opening your link can open the same room in their browser.",
-        connecting: "Opening the live connection. You can continue studying while we connect.",
-        ready: "Copy the live invite and send it to a friend. Keep this tab open while they join.",
-        live: "Keep this tab open while you study together.",
-        failed: "Live connection unavailable. You can keep studying here or retry.",
+        idle: adapter() ? "온라인에 연결하면 친구를 초대할 수 있어요. 참여자에게는 이름과 아바타가 보여요." :
+          "이 방은 개인 공부방이에요. 링크를 열면 각자의 브라우저에서 같은 유형의 방을 열 수 있어요.",
+        connecting: "온라인 방에 연결하는 중에도 공부를 이어갈 수 있어요.",
+        ready: "초대 링크를 복사해 친구에게 보내세요. 친구가 참여할 때까지 이 탭을 열어 두세요.",
+        live: "함께 공부하는 동안 이 탭을 열어 두세요.",
+        failed: "온라인 연결이 끊겼어요. 여기서 계속 공부하거나 다시 연결할 수 있어요.",
       };
       connectNote.textContent = transportMessage || messages[transportStatus];
     }
@@ -319,6 +318,8 @@
     if (field("school")) field("school").value = typeof preference.school === "string" ? preference.school : "";
     if (field("year")) field("year").value = typeof preference.year === "string" ? preference.year : "";
     if (field("hair")) field("hair").value = chosenHair(preference.hair);
+    if (field("skin")) field("skin").value = skinTones.has(preference.skin) ? preference.skin : "medium";
+    if (field("accessory")) field("accessory").value = accessories.has(preference.accessory) ? preference.accessory : "none";
     for (const name of ["glasses", "headphones"]) {
       if (field(name)) field(name).checked = preference[name] === true;
     }
@@ -329,7 +330,7 @@
     if (remember) remember.checked = Boolean(preference.name);
     if (inviteNotice) {
       inviteNotice.hidden = !invite?.invited;
-      if (invite?.invited) inviteNotice.textContent = "You have a live room invite. Take a seat, then join the live room.";
+      if (invite?.invited) inviteNotice.textContent = "온라인 방에 초대됐어요. 방에 들어간 다음 ‘온라인 방 참여’를 누르세요.";
     }
     if (error) error.hidden = true;
     setPhase("profile");
@@ -344,7 +345,7 @@
     }
     const fields = new FormData(form);
     const kind = chosenRoom(fields.get("room"));
-    const name = displayName(fields.get("name")) || "Study Kaki";
+    const name = displayName(fields.get("name")) || "스터디 친구";
     const look = appearance();
     const matchesInvite = invite?.kind === kind;
     room = { kind, code: matchesInvite && invite.code ? invite.code : createId(8),
@@ -397,9 +398,9 @@
       clearTimeout(feedbackTimer);
       if (status) {
         const previousStatus = status.textContent;
-        status.textContent = "Room link copied.";
+        status.textContent = "방 링크를 복사했어요.";
         feedbackTimer = setTimeout(() => {
-          if (status.textContent === "Room link copied.") status.textContent = previousStatus;
+          if (status.textContent === "방 링크를 복사했어요.") status.textContent = previousStatus;
         }, 3_000);
       }
     } catch {
@@ -414,7 +415,7 @@
 
   function renderGoal(value) {
     if (!goalTitle) return;
-    goalTitle.textContent = value ? `Your goal: ${value}` : "";
+    goalTitle.textContent = value ? `내 공부 목표 · ${value}` : "";
     goalTitle.hidden = !value;
   }
 
@@ -465,10 +466,10 @@
     if (goalTitle) renderGoal(value);
     else if (value) {
       const previousStatus = status.textContent;
-      status.textContent = "Study goal saved in this browser.";
+      status.textContent = "이 브라우저에 공부 목표를 저장했어요.";
       clearTimeout(feedbackTimer);
       feedbackTimer = setTimeout(() => {
-        if (status.textContent === "Study goal saved in this browser.") status.textContent = previousStatus;
+        if (status.textContent === "이 브라우저에 공부 목표를 저장했어요.") status.textContent = previousStatus;
       }, 3_000);
     }
   });

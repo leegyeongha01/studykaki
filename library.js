@@ -1,15 +1,29 @@
-import { createLibrary } from "./furniture.js";
+import { createLibrary } from "./furniture.js?v=ko-1";
+import { createCameraControls } from "./camera-controls.js?v=ko-1";
 
 const view = document.querySelector("#scene-3d");
 const sceneTools = document.querySelector("#scene-controls");
+const cameraToolbar = document.querySelector("#camera-toolbar");
 const status = document.querySelector("#walk-status");
 const sourceAvatar = document.querySelector("#scene-avatar");
 const sourceName = document.querySelector("#scene-avatar-name");
 const body = document.body;
 const keys = new Set();
 const players = new Map();
-const outfitColors = { gold: 0xebad36, terracotta: 0xc16044, sage: 0x659b7e, indigo: 0x7771bd };
-const hairColors = { dark: 0x302522, brown: 0x694231, blond: 0xba8140, rose: 0xb46177, slate: 0x676477 };
+const outfitColors = {
+  gold: 0xebad36, terracotta: 0xc16044, sage: 0x659b7e, indigo: 0x7771bd,
+  navy: 0x284875, coral: 0xe27976, mint: 0x7fcabb, charcoal: 0x46424a,
+};
+const hairColors = {
+  dark: 0x302522, brown: 0x694231, blond: 0xba8140, rose: 0xb46177, slate: 0x676477,
+  auburn: 0x833f34, silver: 0xbac2cb, blue: 0x365690,
+};
+const skinColors = {
+  light: { skin: 0xf6cbb3, blush: 0xd88b84 },
+  medium: { skin: 0xf3b68e, blush: 0xcc7469 },
+  tan: { skin: 0xbc815b, blush: 0xa85d59 },
+  deep: { skin: 0x80503e, blush: 0x993f46 },
+};
 const walkKeys = new Set(["w", "a", "s", "d", "arrowup", "arrowleft", "arrowdown", "arrowright"]);
 const radius = 0.22;
 const speed = 3.25;
@@ -23,7 +37,6 @@ let currentRoom;
 let roomActive = false;
 let camera;
 let player;
-let floorTarget;
 let wantedSeat;
 let sittingAt;
 let waypoints = [];
@@ -33,6 +46,9 @@ let lastPayload = "";
 let rally;
 let cameraFocus;
 let narrowView = false;
+let cameraControls;
+let cameraZoom = 1;
+let cameraYaw = 0;
 
 function init() {
   if (!THREE || !globalThis.StudyKakiWalk) return;
@@ -64,6 +80,19 @@ function init() {
   view.hidden = false;
   body.dataset.sceneRender = "3d";
   player = makeCharacter();
+  cameraControls = createCameraControls({
+    element: renderer.domElement,
+    toolbar: cameraToolbar,
+    onChange({ zoom, yaw }) {
+      cameraZoom = zoom;
+      cameraYaw = yaw;
+      if (!cameraFocus) return;
+      camera.zoom = zoom;
+      camera.updateProjectionMatrix();
+      setCameraFocus(cameraFocus.x, cameraFocus.z);
+    },
+    onTap: pointWorld,
+  });
   player.tag.classList.add("player-tag");
   rally = new THREE.Mesh(
     new THREE.RingGeometry(0.23, 0.3, 32),
@@ -78,17 +107,16 @@ function init() {
   new MutationObserver(adaptScene).observe(body, { attributes: true, attributeFilter: ["data-room-phase", "data-scene-room"] });
   new MutationObserver(readAvatar).observe(sourceAvatar, { attributes: true });
   new MutationObserver(readAvatar).observe(sourceName, { childList: true, characterData: true, subtree: true });
-  renderer.domElement.addEventListener("pointerdown", pointerDown);
-  renderer.domElement.addEventListener("pointerup", pointerUp);
-  renderer.domElement.addEventListener("pointercancel", () => { floorTarget = null; });
   renderer.domElement.addEventListener("webglcontextlost", () => {
     delete body.dataset.sceneRender;
     sceneTools.hidden = true;
-    status.textContent = "3D is unavailable. You can still use the study room.";
+    cameraControls.enable(false);
+    status.textContent = "3D 화면을 열 수 없어요. 공부방은 계속 이용할 수 있어요.";
   });
   renderer.domElement.addEventListener("webglcontextrestored", () => {
     body.dataset.sceneRender = "3d";
     sceneTools.hidden = !roomActive;
+    cameraControls.enable(true);
   });
   window.addEventListener("keydown", (event) => keyEvent(event, true));
   window.addEventListener("keyup", (event) => keyEvent(event, false));
@@ -100,15 +128,19 @@ function init() {
 function makeCharacter() {
   const root = new THREE.Group();
   const material = (color, roughness = 0.72) => new THREE.MeshStandardMaterial({ color, roughness });
-  const skin = material(0xf3b68e);
+  const skin = material(skinColors.medium.skin);
   const shirt = material(0xebad36);
   const hair = material(0x302522);
   const pants = material(0x354143);
   const boots = material(0x242727);
   const pupil = material(0x30272a, 0.36);
-  const blush = material(0xcc7469);
+  const blush = material(skinColors.medium.blush);
   const glassesMaterial = material(0x1d302a);
   const headphoneMaterial = material(0x484b52);
+  const capFabric = material(0x4d6254, 0.88);
+  const capStitch = material(0xd3b780, 0.85);
+  const metal = new THREE.MeshStandardMaterial({ color: 0xefbc64, metalness: 0.55, roughness: 0.37 });
+  const roundGeometry = new THREE.SphereGeometry(1, 20, 14);
 
   function shape(parent, geometry, surface, x, y, z) {
     const mesh = new THREE.Mesh(geometry, surface);
@@ -119,7 +151,7 @@ function makeCharacter() {
   }
 
   function sphere(parent, surface, x, y, z, sx, sy, sz) {
-    const mesh = shape(parent, new THREE.SphereGeometry(1, 20, 14), surface, x, y, z);
+    const mesh = shape(parent, roundGeometry, surface, x, y, z);
     mesh.scale.set(sx, sy, sz);
     return mesh;
   }
@@ -139,8 +171,27 @@ function makeCharacter() {
   fringe.rotation.z = -0.13;
   const bob = sphere(head, hair, 0, -0.027, -0.092, 0.295, 0.309, 0.164);
   const bun = sphere(head, hair, 0.098, 0.263, -0.089, 0.11, 0.113, 0.10);
-  bob.visible = false;
-  bun.visible = false;
+  const pony = new THREE.Group();
+  head.add(pony);
+  sphere(pony, capStitch, -0.024, 0.135, -0.229, 0.077, 0.053, 0.050);
+  sphere(pony, hair, -0.046, 0.043, -0.30, 0.088, 0.161, 0.082).rotation.z = -0.23;
+  sphere(pony, hair, -0.109, -0.105, -0.319, 0.062, 0.10, 0.062).rotation.z = -0.42;
+  const curls = new THREE.Group();
+  head.add(curls);
+  for (let ring = 0; ring < 3; ring += 1) {
+    const count = [5, 9, 10][ring];
+    for (let i = 0; i < count; i += 1) {
+      const theta = (i + 0.38 * ring) / count * Math.PI * 2;
+      const radius = [0.095, 0.173, 0.217][ring];
+      const height = [0.288, 0.235, 0.147][ring];
+      const curl = 0.083 + (i % 3) * 0.008;
+      sphere(curls, hair, Math.cos(theta) * radius, height + Math.sin(i * 6.4) * 0.016,
+        Math.sin(theta) * radius * 0.85 - 0.015, curl, curl * 0.95, curl);
+    }
+  }
+  const shaved = shape(head, new THREE.SphereGeometry(1, 26, 12, 0, Math.PI * 2, 0, Math.PI * 0.31),
+    hair, 0, 0.012, -0.005);
+  shaved.scale.set(0.284, 0.287, 0.240);
 
   for (const side of [-1, 1]) {
     sphere(head, skin, side * 0.257, -0.044, 0.005, 0.046, 0.064, 0.047);
@@ -151,15 +202,25 @@ function makeCharacter() {
   sphere(head, pupil, 0, -0.141, 0.199, 0.021, 0.01, 0.01);
   const framedGlasses = new THREE.Group();
   const headphones = new THREE.Group();
-  head.add(framedGlasses, headphones);
+  const cap = new THREE.Group();
+  const earrings = new THREE.Group();
+  head.add(framedGlasses, headphones, cap, earrings);
   for (const side of [-1, 1]) {
     shape(framedGlasses, new THREE.TorusGeometry(0.053, 0.008, 7, 21), glassesMaterial, side * 0.096, -0.04, 0.244);
     sphere(headphones, headphoneMaterial, side * 0.281, -0.038, 0.014, 0.046, 0.083, 0.066);
+    sphere(earrings, metal, side * 0.275, -0.086, 0.030, 0.016, 0.016, 0.011);
+    shape(earrings, new THREE.TorusGeometry(0.030, 0.007, 7, 16), metal,
+      side * 0.277, -0.122, 0.027).rotation.y = side * 0.4;
   }
   shape(framedGlasses, new THREE.BoxGeometry(0.09, 0.009, 0.01), glassesMaterial, 0, -0.033, 0.25);
   shape(headphones, new THREE.TorusGeometry(0.287, 0.022, 8, 26, Math.PI), headphoneMaterial, 0, -0.028, 0.008);
-  framedGlasses.visible = false;
-  headphones.visible = false;
+  const capCrown = shape(cap,
+    new THREE.SphereGeometry(1, 26, 14, 0, Math.PI * 2, 0, Math.PI * 0.53),
+    capFabric, 0, 0.169, -0.016);
+  capCrown.scale.set(0.308, 0.187, 0.266);
+  sphere(cap, capFabric, 0, 0.149, 0.230, 0.239, 0.026, 0.173).rotation.x = 0.12;
+  sphere(cap, capStitch, 0, 0.233, 0.250, 0.047, 0.030, 0.007);
+  sphere(cap, capStitch, 0, 0.354, -0.016, 0.024, 0.013, 0.025);
 
   const arms = [-1, 1].map(side => {
     const pivot = new THREE.Group();
@@ -181,16 +242,31 @@ function makeCharacter() {
   const tag = document.createElement("span");
   tag.className = "scene-name name-3d";
   view.append(tag);
-  return { root, bodyGroup, shirt, hair, bob, bun, framedGlasses, headphones, arms, legs, tag, cycle: 0, facing: 0 };
+  return {
+    root, bodyGroup, shirt, skin, blush, hair, hairCap, fringe, bob, bun, pony, curls, shaved,
+    framedGlasses, headphones, cap, earrings, arms, legs, tag, cycle: 0, facing: 0,
+  };
 }
 
 function paint(actor, appearance, name) {
   actor.shirt.color.setHex(outfitColors[appearance.avatar] ?? outfitColors.gold);
   actor.hair.color.setHex(hairColors[appearance.hair] ?? hairColors.dark);
-  actor.bob.visible = appearance.hairStyle === "bob";
-  actor.bun.visible = appearance.hairStyle === "bun";
-  actor.framedGlasses.visible = appearance.glasses === true || appearance.glasses === "true";
-  actor.headphones.visible = appearance.headphones === true || appearance.headphones === "true";
+  const tone = skinColors[appearance.skin] ?? skinColors.medium;
+  actor.skin.color.setHex(tone.skin);
+  actor.blush.color.setHex(tone.blush);
+  const { hairStyle, accessory } = appearance;
+  const hasCap = accessory === "cap";
+  actor.hairCap.visible = hairStyle !== "shaved";
+  actor.fringe.visible = hairStyle !== "shaved" && hairStyle !== "curls";
+  actor.bob.visible = hairStyle === "bob";
+  actor.bun.visible = hairStyle === "bun" && !hasCap;
+  actor.pony.visible = hairStyle === "pony";
+  actor.curls.visible = hairStyle === "curls" && !hasCap;
+  actor.shaved.visible = hairStyle === "shaved";
+  actor.cap.visible = hasCap;
+  actor.earrings.visible = accessory === "earrings";
+  actor.framedGlasses.visible = accessory === "glasses" || appearance.glasses === true || appearance.glasses === "true";
+  actor.headphones.visible = !hasCap && (appearance.headphones === true || appearance.headphones === "true");
   actor.tag.textContent = name;
 }
 
@@ -236,6 +312,7 @@ function adaptScene() {
   }
   roomActive = active;
   sceneTools.hidden = !active;
+  cameraControls.enable(true);
   if (!active) clearPeers();
   resize();
 }
@@ -261,25 +338,21 @@ function resize() {
 
 function setCameraFocus(x, z) {
   cameraFocus = { x, z };
-  camera.position.set(12 + x, 17, 16 + z);
+  const horizontalX = 12 * Math.cos(cameraYaw) + 16 * Math.sin(cameraYaw);
+  const horizontalZ = 16 * Math.cos(cameraYaw) - 12 * Math.sin(cameraYaw);
+  camera.position.set(horizontalX + x, 17, horizontalZ + z);
+  library.walls.west.visible = horizontalX >= 0;
+  library.walls.north.visible = horizontalZ >= 0;
   camera.lookAt(x, 0.25, z);
   camera.updateMatrixWorld();
 }
 
-function pointerDown(event) {
-  if (!roomActive || !event.isPrimary || event.button !== 0) return;
-  floorTarget = { x: event.clientX, y: event.clientY };
-}
-
-function pointerUp(event) {
-  if (!floorTarget || !roomActive) return;
-  const previous = floorTarget;
-  floorTarget = null;
-  if (Math.hypot(previous.x - event.clientX, previous.y - event.clientY) > 14) return;
+function pointWorld(clientX, clientY) {
+  if (!roomActive) return;
   const box = renderer.domElement.getBoundingClientRect();
   const position = new THREE.Vector2(
-    ((event.clientX - box.left) / box.width) * 2 - 1,
-    1 - ((event.clientY - box.top) / box.height) * 2,
+    ((clientX - box.left) / box.width) * 2 - 1,
+    1 - ((clientY - box.top) / box.height) * 2,
   );
   const ray = new THREE.Raycaster();
   ray.setFromCamera(position, camera);
@@ -324,7 +397,7 @@ function walkTo(destination, seat = null) {
   if (endpoint) {
     rally.position.set(endpoint.x, 0.018, endpoint.z);
     rally.visible = true;
-  } else if (!seat) status.textContent = "No clear path to that point.";
+  } else if (!seat) status.textContent = "그곳까지 갈 수 있는 길이 없어요.";
 }
 
 function keyEvent(event, down) {
@@ -356,15 +429,17 @@ function sitNearby() {
     .filter(({ seat, distance }) => distance <= 1.25 && nav.canTravel({ x, z }, seat.approach))
     .sort((first, second) => first.distance - second.distance)[0]?.seat;
   if (closest) walkTo(closest.approach, closest);
-  else status.textContent = "Walk closer to a chair to sit.";
+  else status.textContent = "의자 가까이에서 앉을 수 있어요.";
 }
 function direction() {
   const has = (one, two) => Number(keys.has(one) || keys.has(two));
   const side = has("d", "arrowright") - has("a", "arrowleft");
   const front = has("s", "arrowdown") - has("w", "arrowup");
   if (!side && !front) return null;
-  const x = side * 0.8 + front * 0.6;
-  const z = -side * 0.6 + front * 0.8;
+  const originalX = side * 0.8 + front * 0.6;
+  const originalZ = -side * 0.6 + front * 0.8;
+  const x = originalX * Math.cos(cameraYaw) + originalZ * Math.sin(cameraYaw);
+  const z = originalZ * Math.cos(cameraYaw) - originalX * Math.sin(cameraYaw);
   const length = Math.hypot(x, z);
   return { x: x / length, z: z / length };
 }
@@ -383,8 +458,8 @@ function walkFrame(dt) {
         here.set(wantedSeat.x, 0, wantedSeat.z);
         player.facing = wantedSeat.angle ?? 0;
         sittingAt = wantedSeat;
-        status.textContent = `Seated at ${sittingAt.label || "the desk"}.`;
-      } else status.textContent = "No clear path to that chair.";
+        status.textContent = sittingAt.label ? `착석 · ${sittingAt.label}` : "자리에 앉았어요.";
+      } else status.textContent = "그 의자까지 갈 수 있는 길이 없어요.";
       wantedSeat = null;
     }
     return false;

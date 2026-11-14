@@ -104,7 +104,7 @@
       streak += 1;
       timestamp -= day;
     }
-    summary.textContent = `${today} min focused today · ${streak}-day streak`;
+    summary.textContent = `오늘 ${today}분 집중 · ${streak}일 연속`;
   }
 
   function duration() {
@@ -126,7 +126,7 @@
     state.remaining = 0;
     saveState();
     status.textContent = state.mode === 'focus'
-      ? 'Focus complete. Your time has been logged.' : 'Break complete.';
+      ? '집중 시간이 끝났어요. 오늘 집중 기록에 추가했어요.' : '휴식 시간이 끝났어요.';
     renderSummary();
   }
 
@@ -139,8 +139,8 @@
       .map(value => String(value).padStart(2, '0')).join(':');
     if (display.textContent !== clock) display.textContent = clock;
 
-    const label = state.endsAt !== null ? 'Pause'
-      : state.remaining > 0 && state.remaining < duration() ? 'Resume' : 'Start';
+    const label = state.endsAt !== null ? '일시정지'
+      : state.remaining > 0 && state.remaining < duration() ? '이어서 시작' : '시작';
     if (toggle.textContent !== label) toggle.textContent = label;
   }
 
@@ -177,7 +177,7 @@
       remove.type = 'button';
       remove.dataset.removeTask = index;
       remove.textContent = '×';
-      remove.setAttribute('aria-label', `Remove task: ${task.label}`);
+      remove.setAttribute('aria-label', `할 일 삭제 (${task.label})`);
       item.append(label, remove);
       return item;
     });
@@ -212,11 +212,11 @@
     if (state.endsAt === null) {
       if (state.remaining === 0) state.remaining = duration();
       state.endsAt = Date.now() + state.remaining;
-      status.textContent = state.mode === 'focus' ? 'Focus in progress.' : 'Break in progress.';
+      status.textContent = state.mode === 'focus' ? '집중 시간이 시작됐어요.' : '휴식 시간이 시작됐어요.';
     } else {
       state.remaining = Math.max(0, state.endsAt - Date.now());
       state.endsAt = null;
-      status.textContent = 'Timer paused.';
+      status.textContent = '타이머를 일시정지했어요.';
     }
     saveState();
     renderTimer();
@@ -255,7 +255,7 @@
     const label = taskInput.value.trim().slice(0, maxTaskLength);
     if (!label) return;
     if (state.tasks.length >= maxTasks) {
-      status.textContent = 'Your checklist can hold up to 20 tasks.';
+      status.textContent = '할 일은 최대 20개까지 추가할 수 있어요.';
       return;
     }
 
@@ -264,7 +264,7 @@
     taskInput.value = '';
     taskInput.focus();
     renderTasks();
-    status.textContent = 'Task added.';
+    status.textContent = '할 일을 추가했어요.';
   });
 
   taskList?.addEventListener('change', (event) => {
@@ -276,7 +276,7 @@
 
     task.done = checkbox.checked;
     saveState();
-    status.textContent = task.done ? 'Task completed.' : 'Task reopened.';
+    status.textContent = task.done ? '할 일을 완료했어요.' : '완료 표시를 해제했어요.';
   });
 
   taskList?.addEventListener('click', (event) => {
@@ -287,7 +287,7 @@
     state.tasks.splice(index, 1);
     saveState();
     renderTasks();
-    status.textContent = 'Task removed.';
+    status.textContent = '할 일을 삭제했어요.';
     const nextButton = taskList.querySelector(`[data-remove-task="${index}"]`)
       || taskList.querySelector(`[data-remove-task="${index - 1}"]`);
     (nextButton || taskInput).focus();

@@ -5,15 +5,22 @@
   const SINGAPORE = "Asia/Singapore";
   const DAY_MS = 86_400_000;
   const MAX_LINK_LENGTH = 4_000;
-  const MODES = { silent: "Silent focus", module: "Module study" };
+  const MODES = { silent: "조용히 각자 공부", module: "과목 스터디" };
+  const MODE_SEARCH_ALIASES = { silent: "Silent focus", module: "Module study" };
+  const VENUE_LABELS = {
+    "Lee Wee Nam Library": "리위남 도서관", "The Hive": "더 하이브", "The Arc": "더 아크",
+  };
+  const VENUE_KEYS = new Map(Object.entries(VENUE_LABELS).flatMap(([key, label]) =>
+    [[key.toLowerCase(), key], [label, key]],
+  ));
   const DATE_OPTIONS = { timeZone: SINGAPORE };
   const DATE_KEY = new Intl.DateTimeFormat("en-CA", {
     ...DATE_OPTIONS, year: "numeric", month: "2-digit", day: "2-digit",
   });
-  const SHORT_DATE = new Intl.DateTimeFormat("en-SG", {
-    ...DATE_OPTIONS, weekday: "short", day: "numeric", month: "short",
+  const SHORT_DATE = new Intl.DateTimeFormat("ko-KR", {
+    ...DATE_OPTIONS, weekday: "short", day: "numeric", month: "long",
   });
-  const CLOCK = new Intl.DateTimeFormat("en-SG", {
+  const CLOCK = new Intl.DateTimeFormat("ko-KR", {
     ...DATE_OPTIONS, hour: "numeric", minute: "2-digit", hour12: true,
   });
   const PATHS = {
@@ -37,7 +44,7 @@
   const search = document.querySelector("#search");
   const dayControl = document.querySelector("#day-filter");
   const venueControl = document.querySelector("#venue-filter");
-  const standardVenues = new Set(Array.from(venueControl?.options || [], (option) => option.value));
+  const standardVenues = new Set(Array.from(venueControl?.options || [], (option) => canonicalVenue(option.value)));
   const toast = document.querySelector("#app-toast");
 
   const savedState = readState();
@@ -84,6 +91,15 @@
 
   function startTime(session) {
     return new Date(`${session.date}T${session.time}:00+08:00`);
+  }
+
+  function canonicalVenue(venue) {
+    return VENUE_KEYS.get(venue.toLowerCase()) || venue;
+  }
+
+  function venueLabel(venue) {
+    const canonical = canonicalVenue(venue);
+    return Object.hasOwn(VENUE_LABELS, canonical) ? VENUE_LABELS[canonical] : venue;
   }
 
   function readText(value, maxLength) {
@@ -169,23 +185,23 @@
   }
 
   function saveAndNotify(message) {
-    notify(persist() ? message : `${message} Browser storage is unavailable for this visit.`);
+    notify(persist() ? message : `${message} 지금은 브라우저에 저장할 수 없어요.`);
   }
 
   function createDemoSessions() {
     const examples = [
-      ["Deep focus at Lee Wee Nam", "silent", "", "Lee Wee Nam Library", 0, "15:00", 90, 6, 4,
-        "Bring whatever you’re working on. Two quiet focus blocks with a short break in between."],
-      ["BG3104 MRI revision", "module", "BG3104", "The Hive", 0, "17:30", 60, 5, 3,
-        "Work through MRI tutorial questions and compare approaches before the exam."],
-      ["Evening catch-up at The Arc", "silent", "", "The Arc", 0, "19:00", 60, 8, 3,
-        "A low-key hour for lectures, notes, or readings. Bring headphones if you need them."],
-      ["MH1810 problem-solving", "module", "MH1810", "The Hive", 1, "11:00", 90, 6, 5,
-        "Bring a couple of calculus questions to work through together."],
-      ["Quiet afternoon reset", "silent", "", "Lee Wee Nam Library", 1, "14:00", 60, 5, 2,
-        "Set one task and spend an hour getting through it in good company."],
-      ["BG3102 control systems review", "module", "BG3102", "The Arc", 2, "16:00", 90, 5, 5,
-        "Practice Bode plots and compare step-by-step answers with coursemates."],
+      ["리위남 도서관에서 집중 공부", "silent", "", "Lee Wee Nam Library", 0, "15:00", 90, 6, 4,
+        "각자 공부할 거리를 가져오세요. 두 번 집중해서 공부하고 중간에 잠깐 쉬어요."],
+      ["BG3104 MRI 복습", "module", "BG3104", "The Hive", 0, "17:30", 60, 5, 3,
+        "시험 전에 MRI 튜토리얼 문제를 풀고 풀이를 비교해요."],
+      ["더 아크 저녁 자습", "silent", "", "The Arc", 0, "19:00", 60, 8, 3,
+        "밀린 강의나 필기를 정리하며 한 시간 공부해요. 필요하면 이어폰을 가져오세요."],
+      ["MH1810 문제 풀이", "module", "MH1810", "The Hive", 1, "11:00", 90, 6, 5,
+        "함께 풀어 보고 싶은 미적분 문제를 한두 개 가져오세요."],
+      ["조용한 오후 자습", "silent", "", "Lee Wee Nam Library", 1, "14:00", 60, 5, 2,
+        "오늘 할 일 하나를 정하고 한 시간 동안 함께 집중해요."],
+      ["BG3102 제어 시스템 복습", "module", "BG3102", "The Arc", 2, "16:00", 90, 5, 5,
+        "보드 선도(Bode plot)를 그려 보고 풀이를 단계별로 비교해요."],
     ];
 
     return examples.map(([title, mode, module, venue, offset, time, duration, capacity, attending, notes], index) => ({
@@ -197,9 +213,9 @@
   function timeLabel(session) {
     const start = startTime(session);
     const finish = new Date(start.valueOf() + session.duration * 60_000);
-    const date = session.date === relativeDate(0) ? "Today" :
-      session.date === relativeDate(1) ? "Tomorrow" : SHORT_DATE.format(start);
-    return `${date}, ${CLOCK.format(start)} – ${CLOCK.format(finish)}`;
+    const date = session.date === relativeDate(0) ? "오늘" :
+      session.date === relativeDate(1) ? "내일" : SHORT_DATE.format(start);
+    return `${date} ${CLOCK.format(start)} ~ ${CLOCK.format(finish)}`;
   }
 
   function joined(session) {
@@ -211,10 +227,10 @@
   }
 
   function capacityLabel(session) {
-    if (!session.demo) return `Up to ${session.capacity} people`;
+    if (!session.demo) return `최대 ${session.capacity}명`;
     const spots = session.capacity - session.attending - Number(joined(session));
-    if (spots === 0) return "Full";
-    return `${spots} ${spots === 1 ? "spot" : "spots"} left`;
+    if (spots === 0) return "정원 마감";
+    return `${spots}명 참여 가능`;
   }
 
   function cardFor(session) {
@@ -224,32 +240,32 @@
     top.append(icon(session.mode, "card-icon"));
     const badges = element("div", "card-badges");
     badges.append(element("span", "card-mode", MODES[session.mode]));
-    if (session.demo) badges.append(element("span", "card-demo", "Demo"));
+    if (session.demo) badges.append(element("span", "card-demo", "예시"));
 
     const isSaved = savedState.saved.has(session.id);
     const save = button("card-save", undefined, () => {
       toggleSaved(session);
       grid.querySelector(`[data-session-id="${session.id}"] .card-save`)?.focus();
     });
-    save.setAttribute("aria-label", `Save ${session.title}`);
+    save.setAttribute("aria-label", `${session.title} 저장`);
     save.setAttribute("aria-pressed", String(isSaved));
-    save.title = isSaved ? "Remove bookmark" : "Save session";
+    save.title = isSaved ? "북마크 삭제" : "모임 저장";
     save.append(icon("bookmark"));
     badges.append(save);
     if (!session.demo) {
       const share = button("card-share", undefined, () => copyLink(session));
-      share.setAttribute("aria-label", `Copy link to ${session.title}`);
-      share.title = "Copy share link";
+      share.setAttribute("aria-label", `${session.title} 공유 링크 복사`);
+      share.title = "공유 링크 복사";
       share.append(icon("share"));
       badges.append(share);
     }
     top.append(badges);
     card.dataset.sessionId = session.id;
     card.append(top, element("h3", "card-title", session.title),
-      element("p", "card-description", session.notes || session.module || "Bring your study materials."));
+      element("p", "card-description", session.notes || session.module || "각자 공부할 자료를 가져오세요."));
 
     const metadata = element("div", "card-meta");
-    for (const [symbol, value] of [["calendar", timeLabel(session)], ["pin", session.venue]]) {
+    for (const [symbol, value] of [["calendar", timeLabel(session)], ["pin", venueLabel(session.venue)]]) {
       const row = element("div", "card-meta-row");
       row.append(icon(symbol), element("span", "", value));
       metadata.append(row);
@@ -257,7 +273,7 @@
     const footer = element("div", "card-footer");
     const capacity = element("span", "card-capacity");
     capacity.append(icon("people"), element("span", "", capacityLabel(session)));
-    const open = button("card-open", "View session", () => openDetail(session, open));
+    const open = button("card-open", "모임 보기", () => openDetail(session, open));
     open.append(icon("arrow"));
     footer.append(capacity, open);
     card.append(metadata, footer);
@@ -280,9 +296,10 @@
       (activeView !== "mine" || joined(session)) &&
       (activeView !== "saved" || savedState.saved.has(session.id)) &&
       (activeMode === "all" || session.mode === activeMode) &&
-      (!venue || venue === "all" || session.venue.toLowerCase() === venue.toLowerCase()) &&
+      (!venue || venue === "all" || canonicalVenue(session.venue).toLowerCase() === canonicalVenue(venue).toLowerCase()) &&
       matchesDay(session) &&
-      (!query || [session.title, session.module, session.venue, session.notes]
+      (!query || [session.title, session.module, canonicalVenue(session.venue), venueLabel(session.venue),
+        session.notes, MODES[session.mode], MODE_SEARCH_ALIASES[session.mode]]
         .some((field) => field.toLowerCase().includes(query))),
     ).sort((first, second) => startTime(first) - startTime(second));
   }
@@ -307,25 +324,25 @@
     const sessions = visibleSessions();
     updateFilters();
     document.querySelector("#directory-title").textContent = {
-      browse: "Study sessions", mine: "My sessions", saved: "Saved sessions",
+      browse: "스터디 모임", mine: "내 모임", saved: "저장한 모임",
     }[activeView];
     document.querySelector("#result-count").textContent =
-      `${sessions.length} ${sessions.length === 1 ? "session" : "sessions"}`;
+      `모임 ${sessions.length}개`;
     grid.replaceChildren(...sessions.map(cardFor));
     if (sessions.length) return;
 
     const empty = element("div", "directory-empty");
-    empty.append(element("h3", "", "No sessions found"));
+    empty.append(element("h3", "", "표시할 모임이 없어요"));
     const filtersOn = Boolean(search.value || activeMode !== "all" || activeDay !== "all" ||
       (venueControl?.value && venueControl.value !== "all"));
     const emptyMessages = {
-      browse: "Create a session to get started.",
-      mine: "Sessions you join or host will appear here.",
-      saved: "Bookmark a session to find it here later.",
+      browse: "새 모임을 만들고 함께 공부해 보세요.",
+      mine: "직접 만들거나 내 모임에 추가한 스터디가 여기에 표시돼요.",
+      saved: "관심 있는 모임을 저장하면 여기에서 다시 볼 수 있어요.",
     };
-    empty.append(element("p", "", filtersOn ? "Try a different search or clear your filters." :
+    empty.append(element("p", "", filtersOn ? "다른 검색어로 찾아보거나 필터를 초기화해 보세요." :
       emptyMessages[activeView]));
-    if (filtersOn) empty.append(button("button button-secondary", "Clear filters", () => {
+    if (filtersOn) empty.append(button("button button-secondary", "필터 초기화", () => {
       resetFilters();
       render();
     }));
@@ -338,16 +355,16 @@
     venueControl.querySelectorAll("[data-custom-venue]").forEach((option) => option.remove());
     const known = new Set(Array.from(standardVenues, (venue) => venue.toLowerCase()));
     for (const { venue } of savedState.sessions) {
-      const key = venue.toLowerCase();
+      const key = canonicalVenue(venue).toLowerCase();
       if (!known.has(key)) {
         known.add(key);
-        const option = new Option(venue, venue);
+        const option = new Option(venueLabel(venue), canonicalVenue(venue));
         option.dataset.customVenue = "";
         venueControl.append(option);
       }
     }
     venueControl.value = Array.from(venueControl.options, (option) => option.value)
-      .find((venue) => venue.toLowerCase() === selected.toLowerCase()) || "all";
+      .find((venue) => canonicalVenue(venue).toLowerCase() === canonicalVenue(selected).toLowerCase()) || "all";
   }
 
   function resetFilters() {
@@ -367,7 +384,7 @@
   function toggleSaved(session) {
     const wasSaved = savedState.saved.delete(session.id);
     if (!wasSaved) savedState.saved.add(session.id);
-    saveAndNotify(wasSaved ? "Bookmark removed." : "Session saved.");
+    saveAndNotify(wasSaved ? "북마크를 삭제했어요." : "모임을 저장했어요.");
     render();
     if (activeDetail) showDetail(activeDetail);
   }
@@ -385,42 +402,42 @@
 
   function showDetail(session) {
     const header = element("div", "detail-header");
-    const label = session.demo ? `${MODES[session.mode]} · Demo` : MODES[session.mode];
+    const label = session.demo ? `${MODES[session.mode]} · 예시` : MODES[session.mode];
     header.append(element("p", "detail-kicker", label), element("h2", "", session.title));
     header.querySelector("h2").id = "detail-title";
     if (session.notes) header.append(element("p", "detail-description", session.notes));
 
     const metadata = element("dl", "detail-meta");
     const fields = [
-      ["Time (SGT)", timeLabel(session)], ["Location", session.venue],
-      ["Duration", `${session.duration} minutes`], ["Group size", capacityLabel(session)],
+      ["시간 (싱가포르 기준)", timeLabel(session)], ["장소", venueLabel(session.venue)],
+      ["소요 시간", `${session.duration}분`], ["인원", capacityLabel(session)],
     ];
-    if (session.module) fields.push(["Module", session.module]);
+    if (session.module) fields.push(["과목", session.module]);
     for (const [term, value] of fields) {
       const row = element("div", "detail-meta-row");
       row.append(element("dt", "", term), element("dd", "", value));
       metadata.append(row);
     }
-    const note = session.demo ? "This is an example session. Participation is simulated." :
-      session.owned ? "You are hosting. Share the link to send these details to other students." :
-        "Adding this plan only updates this browser. Confirm attendance directly with the host.";
+    const note = session.demo ? "예시 모임에서 참여 기능을 체험해 볼 수 있어요." :
+      session.owned ? "내가 만든 모임이에요. 링크를 보내면 친구도 모임 정보를 볼 수 있어요." :
+        "내 모임에 추가하면 이 브라우저에 저장돼요. 실제 참석 여부는 주최자에게 직접 알려 주세요.";
     const actions = element("div", "detail-actions");
     const wasSaved = savedState.saved.has(session.id);
-    actions.append(button("button button-secondary detail-save", wasSaved ? "Remove bookmark" : "Save session", () => {
+    actions.append(button("button button-secondary detail-save", wasSaved ? "북마크 삭제" : "모임 저장", () => {
       toggleSaved(session);
       detailContent.querySelector(".detail-save")?.focus();
     }));
     if (!session.demo) {
-      actions.append(button("button button-secondary", "Copy share link", () => copyLink(session)));
+      actions.append(button("button button-secondary", "공유 링크 복사", () => copyLink(session)));
     }
-    actions.append(button("button button-secondary", "Add to calendar", () => downloadCalendar(session)));
+    actions.append(button("button button-secondary", "캘린더에 추가", () => downloadCalendar(session)));
     if (session.owned) {
-      actions.append(button("button button-secondary", "Delete session", () => deleteSession(session)));
+      actions.append(button("button button-secondary", "모임 삭제", () => deleteSession(session)));
     } else {
-      if (!session.demo) actions.append(button("button button-secondary", "Remove from this browser", () => deleteSession(session)));
-      const label = joined(session) ? (session.demo ? "Leave demo session" : "Remove from my sessions") :
-        (session.demo ? "Join demo session" : "Add to my sessions");
-      const toggle = button("button button-primary", isFull(session) ? "Session full" : label, () => {
+      if (!session.demo) actions.append(button("button button-secondary", "이 브라우저에서 삭제", () => deleteSession(session)));
+      const label = joined(session) ? (session.demo ? "예시 모임 나가기" : "내 모임에서 제거") :
+        (session.demo ? "예시 모임 참여" : "내 모임에 추가");
+      const toggle = button("button button-primary", isFull(session) ? "정원 마감" : label, () => {
         toggleJoined(session);
         detailContent.querySelector(".button-primary")?.focus();
       });
@@ -434,19 +451,19 @@
     if (isFull(session)) return;
     const wasJoined = savedState.joined.delete(session.id);
     if (!wasJoined) savedState.joined.add(session.id);
-    saveAndNotify(wasJoined ? "Session removed from your plans." : "Session added to your plans.");
+    saveAndNotify(wasJoined ? "내 모임에서 제거했어요." : "내 모임에 추가했어요.");
     render();
     showDetail(session);
   }
 
   function deleteSession(session) {
-    const prompt = session.owned ? "Delete this session from this browser? Copies already shared by link can still be opened." :
-      "Remove this session from this browser? You can reopen it with the original link.";
+    const prompt = session.owned ? "이 브라우저에서 모임을 삭제할까요? 이미 공유한 링크는 계속 열 수 있어요." :
+      "이 브라우저에서 모임을 삭제할까요? 받은 링크로 언제든 다시 열 수 있어요.";
     if (!window.confirm(prompt)) return;
     savedState.sessions = savedState.sessions.filter(({ id }) => id !== session.id);
     savedState.joined.delete(session.id);
     savedState.saved.delete(session.id);
-    saveAndNotify(session.owned ? "Session deleted." : "Session removed from this browser.");
+    saveAndNotify(session.owned ? "모임을 삭제했어요." : "이 브라우저에서 모임을 삭제했어요.");
     detailDialog.close();
     if (location.hash.startsWith("#session=")) history.replaceState(null, "", location.pathname + location.search);
     render();
@@ -475,14 +492,15 @@
     const id = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
     const session = sessionFromData({
       ...data, id, module: data.module || "", notes: data.notes || "",
+      venue: canonicalVenue(readText(data.venue, 80)),
       capacity: Number(data.capacity), duration: Number(data.duration),
     });
     if (!session) {
-      showCreateError("Check the title, location, time, duration and group size.");
+      showCreateError("제목, 장소, 시간, 소요 시간, 인원을 확인해 주세요.");
       return;
     }
     if (startTime(session).valueOf() < Date.now()) {
-      showCreateError("Choose a start time in the future (Singapore time).");
+      showCreateError("싱가포르 기준으로 현재 시각 이후의 시간을 골라 주세요.");
       createForm.elements.date.focus();
       return;
     }
@@ -491,7 +509,7 @@
     createDialog.close();
     selectView("mine");
     openDetail(ownedSession, grid.querySelector(`[data-session-id="${id}"] .card-open`));
-    saveAndNotify("Session created. Copy the link to share it.");
+    saveAndNotify("모임을 만들었어요. 링크를 복사해 친구에게 보내 보세요.");
   }
 
   function shareUrl(session) {
@@ -508,16 +526,16 @@
     const url = shareUrl(session);
     try {
       await navigator.clipboard.writeText(url);
-      notify("Share link copied.");
+      notify("공유 링크를 복사했어요.");
     } catch {
-      window.prompt("Copy this session link:", url);
+      window.prompt("이 모임 링크를 복사하세요.", url);
     }
   }
 
   function openSharedSession() {
     if (!location.hash.startsWith("#session=")) return;
     if (location.hash.length > MAX_LINK_LENGTH) {
-      notify("This study session link is invalid.");
+      notify("유효한 모임 링크가 아니에요. 받은 링크를 확인해 주세요.");
       return;
     }
     let shared;
@@ -533,7 +551,7 @@
       shared = null;
     }
     if (!shared) {
-      notify("This study session link is invalid.");
+      notify("유효한 모임 링크가 아니에요. 받은 링크를 확인해 주세요.");
       return;
     }
     const existing = savedState.sessions.find(({ id }) => id === shared.id);
@@ -573,13 +591,13 @@
   function downloadCalendar(session) {
     const start = startTime(session);
     const end = new Date(start.valueOf() + session.duration * 60_000);
-    const subject = session.demo ? `[Demo] ${session.title}` : session.title;
+    const subject = session.demo ? `[예시] ${session.title}` : session.title;
     const lines = [
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//StudyKaki//Study Sessions//EN",
       "BEGIN:VEVENT", `UID:${session.demo ? `${session.id}-${session.date}` : session.id}@studykaki.local`,
       `DTSTAMP:${calendarDate(new Date())}`,
       `DTSTART:${calendarDate(start)}`, `DTEND:${calendarDate(end)}`,
-      `SUMMARY:${calendarText(subject)}`, `LOCATION:${calendarText(session.venue)}`,
+      `SUMMARY:${calendarText(subject)}`, `LOCATION:${calendarText(canonicalVenue(session.venue))}`,
       `DESCRIPTION:${calendarText(session.notes)}`,
       "END:VEVENT", "END:VCALENDAR", "",
     ];
@@ -590,7 +608,7 @@
     link.download = `studykaki-${session.id.slice(0, 8)}.ics`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 5_000);
-    notify("Calendar file downloaded.");
+    notify("캘린더 파일을 다운로드했어요.");
   }
 
   function profileControl(name) {
@@ -608,7 +626,7 @@
 
   function renderProfile() {
     for (const label of document.querySelectorAll("#profile-name, [data-profile-name]")) {
-      label.textContent = savedState.profile.nickname || savedState.profile.name || "My profile";
+      label.textContent = savedState.profile.nickname || savedState.profile.name || "내 프로필";
     }
   }
 
@@ -619,14 +637,14 @@
     for (const field of ["name", "school", "year"]) {
       const control = profileControl(field);
       if (control?.required && !profile[field]) {
-        control.setCustomValidity("Enter a value for this field.");
+        control.setCustomValidity("이 항목을 입력해 주세요.");
         control.addEventListener("input", () => control.setCustomValidity(""), { once: true });
         control.reportValidity();
         return;
       }
     }
     savedState.profile = profile;
-    saveAndNotify("Profile saved in this browser.");
+    saveAndNotify("이 브라우저에 프로필을 저장했어요.");
     profileDialog.close();
     renderProfile();
   }
@@ -659,7 +677,7 @@
   document.querySelector("#clear-profile")?.addEventListener("click", () => {
     savedState.profile = profileFromData();
     profileForm.reset();
-    saveAndNotify("Profile cleared from this browser.");
+    saveAndNotify("이 브라우저에서 프로필을 삭제했어요.");
     renderProfile();
   });
   detailDialog.addEventListener("close", () => {

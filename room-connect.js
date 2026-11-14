@@ -7,9 +7,11 @@
   const idPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
   const identityPattern = /^[0-9a-f]{24}$/;
   const tokenPattern = /^[0-9a-f]{32}$/;
-  const avatars = new Set(['terracotta', 'sage', 'indigo', 'gold']);
-  const hairColors = new Set(['dark', 'brown', 'blond', 'rose', 'slate']);
-  const hairStyles = new Set(['short', 'bob', 'bun']);
+  const avatars = new Set(['terracotta', 'sage', 'indigo', 'gold', 'navy', 'coral', 'mint', 'charcoal']);
+  const hairColors = new Set(['dark', 'brown', 'blond', 'rose', 'slate', 'auburn', 'silver', 'blue']);
+  const hairStyles = new Set(['short', 'bob', 'bun', 'pony', 'curls', 'shaved']);
+  const skinTones = new Set(['light', 'medium', 'tan', 'deep']);
+  const accessories = new Set(['none', 'cap', 'earrings', 'glasses']);
   const maxGuests = 5;
   const updateInterval = 100;
   const maximumBufferedBytes = 64 * 1024;
@@ -30,7 +32,7 @@
         clearTimeout(timeout);
         script.remove();
         peerScript = undefined;
-        reject(new Error('Room connection library is unavailable.'));
+        reject(new Error('온라인 방에 연결하는 데 필요한 기능을 불러오지 못했어요.'));
       };
       const timeout = setTimeout(fail, handshakeTimeout);
       script.addEventListener('error', fail, { once: true });
@@ -84,10 +86,12 @@
     if (typeof id !== 'string' || !identityPattern.test(id)) return null;
     const profile = {
       id,
-      name: display(value?.name, 28) || 'Guest',
+      name: display(value?.name, 28) || '스터디 친구',
       avatar: avatars.has(value?.avatar) ? value.avatar : 'sage',
       hair: hairColors.has(value?.hair) ? value.hair : 'dark',
       hairStyle: hairStyles.has(value?.hairStyle) ? value.hairStyle : 'short',
+      skin: skinTones.has(value?.skin) ? value.skin : 'medium',
+      accessory: accessories.has(value?.accessory) ? value.accessory : 'none',
       glasses: value?.glasses === true,
       headphones: value?.headphones === true,
     };
@@ -163,7 +167,7 @@
         renderedPeersKey = peersKey;
         onPeers(profiles);
       }
-      setStatus(profiles.length ? 'live' : 'ready', profiles.length ? '' : 'Room ready. Share the invite to study together.');
+      setStatus(profiles.length ? 'live' : 'ready', profiles.length ? '' : '방이 열렸어요. 초대 링크를 친구에게 보내세요.');
     }
 
     function scheduleUpdate() {
@@ -270,7 +274,7 @@
             authenticating = true;
             const expected = await proof(key, 'host', challenge, kind);
             if (message.proof !== expected) {
-              fail('This invite could not be verified. Ask the host for a new link.');
+              fail('초대 링크를 확인할 수 없어요. 방을 만든 친구에게 새 링크를 요청하세요.');
               return;
             }
             const claim = await proof(key, 'guest', message.challenge, kind);
@@ -282,7 +286,7 @@
           }
           if (!verified) return;
           if (message.type === 'full') {
-            fail('This room is full. Ask the host to share another room.');
+            fail('방이 가득 찼어요. 방을 만든 친구에게 다른 방 링크를 요청하세요.');
             return;
           }
           if (message.type === 'pong') lastSeen = Date.now();
@@ -301,30 +305,30 @@
           setStatus('live');
           if (sentProfileKey !== currentProfileKey) scheduleUpdate();
         } catch {
-          fail('Room connection failed. Open the invite again to retry.');
+          fail('방에 연결할 수 없어요. 초대 링크를 다시 열어 주세요.');
         }
       });
-      host.on('close', () => fail('The host left or the room connection was lost.'));
-      host.on('error', () => fail('Could not reach the host. Check that the host has the room open.'));
+      host.on('close', () => fail('방을 만든 친구가 나갔거나 연결이 끊겼어요.'));
+      host.on('error', () => fail('연결할 수 없어요. 친구가 방을 열어 두었는지 확인해 주세요.'));
       ticker = setInterval(() => {
         if (!connected || closed) return;
-        if (Date.now() - lastSeen > heartbeatTimeout) fail('The room connection timed out.');
+        if (Date.now() - lastSeen > heartbeatTimeout) fail('응답이 없어 온라인 방 연결이 종료됐어요.');
         else if (host.open) host.send({ type: 'ping' });
       }, heartbeatInterval);
     }
 
     async function start() {
       if (closed) return;
-      setStatus('connecting', guest ? 'Connecting to the host…' : 'Opening your room…');
+      setStatus('connecting', guest ? '친구가 만든 방에 연결 중…' : '온라인 방을 여는 중…');
       onPeers([]);
       if (!roomKinds.has(kind) || !crypto.subtle || !currentProfile) {
-        fail('Live rooms require a secure browser connection.');
+        fail('온라인 방은 보안 연결(HTTPS)에서 열 수 있어요.');
         return;
       }
       try {
         const Peer = await loadPeer();
         if (closed) return;
-        deadline = setTimeout(() => fail(guest ? 'No response from the host. Check that the room is still open.' : 'Room service did not respond. Try again.'), handshakeTimeout);
+        deadline = setTimeout(() => fail(guest ? '응답이 없어요. 친구가 방을 열어 두었는지 확인해 주세요.' : '온라인 방 서비스가 응답하지 않아요. 다시 연결해 주세요.'), handshakeTimeout);
         peer = new Peer({ secure: true, referrerPolicy: 'no-referrer' });
         peer.on('open', () => {
           if (guest) {
@@ -344,17 +348,17 @@
           if (guest) connection.close();
           else acceptGuest(connection);
         });
-        peer.on('disconnected', () => fail('Signaling disconnected. Open the room again to reconnect.'));
+        peer.on('disconnected', () => fail('온라인 연결이 끊겼어요. 방을 다시 열어 연결해 주세요.'));
         peer.on('error', error => {
           if (error.type === 'peer-unavailable') {
-            if (guest) fail('The host is offline. Ask for a current invite.');
+            if (guest) fail('친구의 방이 닫혀 있어요. 새 초대 링크를 요청하세요.');
             return;
           }
           if (!guest && connected && error.type === 'webrtc') return;
-          fail('Could not connect to the room service. Try again or use the solo timer.');
+          fail('온라인 방 서비스에 연결할 수 없어요. 다시 연결하거나 혼자 공부할 수 있어요.');
         });
       } catch {
-        fail('Room service is unavailable. Try again or use the solo timer.');
+        fail('온라인 방 서비스를 이용할 수 없어요. 다시 연결하거나 혼자 공부할 수 있어요.');
       }
     }
 
