@@ -417,6 +417,7 @@
     if (session.owned) {
       actions.append(button("button button-secondary", "Delete session", () => deleteSession(session)));
     } else {
+      if (!session.demo) actions.append(button("button button-secondary", "Remove from this browser", () => deleteSession(session)));
       const label = joined(session) ? (session.demo ? "Leave demo session" : "Remove from my sessions") :
         (session.demo ? "Join demo session" : "Add to my sessions");
       const toggle = button("button button-primary", isFull(session) ? "Session full" : label, () => {
@@ -439,12 +440,15 @@
   }
 
   function deleteSession(session) {
-    if (!window.confirm("Delete this session from this browser? Copies already shared by link can still be opened.")) return;
+    const prompt = session.owned ? "Delete this session from this browser? Copies already shared by link can still be opened." :
+      "Remove this session from this browser? You can reopen it with the original link.";
+    if (!window.confirm(prompt)) return;
     savedState.sessions = savedState.sessions.filter(({ id }) => id !== session.id);
     savedState.joined.delete(session.id);
     savedState.saved.delete(session.id);
-    saveAndNotify("Session deleted.");
+    saveAndNotify(session.owned ? "Session deleted." : "Session removed from this browser.");
     detailDialog.close();
+    if (location.hash.startsWith("#session=")) history.replaceState(null, "", location.pathname + location.search);
     render();
   }
 
@@ -652,6 +656,12 @@
   venueControl?.addEventListener("change", render);
   createForm.addEventListener("submit", createSession);
   profileForm.addEventListener("submit", saveProfile);
+  document.querySelector("#clear-profile")?.addEventListener("click", () => {
+    savedState.profile = profileFromData();
+    profileForm.reset();
+    saveAndNotify("Profile cleared from this browser.");
+    renderProfile();
+  });
   detailDialog.addEventListener("close", () => {
     const next = activeDetail && grid.querySelector(`[data-session-id="${activeDetail.id}"] .card-open`);
     (next || detailOpener)?.focus();

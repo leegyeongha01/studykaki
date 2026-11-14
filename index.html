@@ -3,18 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Find your next study session at NTU. Browse campus meetups, plan a study group, or start a focus timer.">
-  <meta name="theme-color" content="#f9f7f2">
-  <title>StudyKaki — Study together at NTU</title>
+  <meta name="description" content="An online reading room for NTU students. Choose a character, take a seat, and study alongside friends.">
+  <meta name="theme-color" content="#263a32">
+  <title>StudyKaki · NTU Study Room</title>
   <link rel="icon" href="./mark.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <script src="./app.js" defer></script>
+  <link rel="stylesheet" href="./scene.css">
+  <script src="./room-connect.js" defer></script>
+  <script src="./rooms.js" defer></script>
   <script src="./focus.js" defer></script>
+  <script src="./scene.js" defer></script>
 </head>
-<body>
+<body class="room-app" data-room-phase="profile" data-scene-room="quiet">
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4.5 12h14m-5-5 5 5-5 5"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 18 18 6M8 6h10v10"/></symbol>
@@ -30,122 +33,131 @@
     <symbol id="i-grid" viewBox="0 0 24 24"><rect x="5" y="5" width="5" height="5" rx="1"/><rect x="14" y="5" width="5" height="5" rx="1"/><rect x="5" y="14" width="5" height="5" rx="1"/><rect x="14" y="14" width="5" height="5" rx="1"/></symbol>
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   </svg>
-  <a class="skip" href="#main">Skip to content</a>
-  <header class="topbar">
-    <div class="topbar-inner shell">
-      <a class="brand" href="#" aria-label="StudyKaki home"><img src="./mark.svg" width="39" height="39" alt=""><span>StudyKaki<span class="brand-dot">.</span></span></a>
-      <nav aria-label="Main navigation">
-        <a href="#sessions">Sessions</a>
-        <button type="button" data-open-focus>Focus timer</button>
-        <a href="#campus">Campus links</a>
-      </nav>
-      <button id="open-profile" class="button button-profile" type="button"><svg class="icon"><use href="#i-user"/></svg><span id="profile-name">My profile</span></button>
+  <main class="study-scene" aria-label="StudyKaki virtual library">
+    <div class="scene-wall" aria-hidden="true"></div>
+    <div class="scene-vignette" aria-hidden="true"></div>
+    <div class="scene-rug" aria-hidden="true"></div>
+
+    <header class="room-clock">
+      <a class="brand" href="./" title="StudyKaki entrance"><img src="./mark.svg" width="30" height="30" alt=""><span>StudyKaki<span class="brand-dot">.</span></span></a>
+      <time id="scene-time" aria-label="Singapore time">--:--:--</time>
+      <div class="scene-date"><span id="scene-date">Singapore time</span><span>SGT</span></div>
+    </header>
+
+    <aside class="scene-location" aria-label="Current room">
+      <span class="location-dot"></span>
+      <div><strong id="scene-location-name">Quiet reading room</strong><small id="scene-location-status">At the entrance</small></div>
+    </aside>
+
+    <div id="scene-character" class="scene-character" aria-hidden="true">
+      <span id="scene-avatar-name" class="scene-name">Study Kaki</span>
+      <div id="scene-avatar" class="kaki-avatar" data-avatar="gold" data-hair="dark" data-hair-style="short">
+        <span class="avatar-shadow"></span>
+        <span class="avatar-feet"></span>
+        <span class="avatar-body"></span>
+        <span class="avatar-arms"></span>
+        <span class="avatar-face"></span>
+        <span class="avatar-hair"></span>
+        <span class="avatar-glasses"></span>
+        <span class="avatar-headphones"></span>
+      </div>
     </div>
-  </header>
-  <main id="main" class="shell">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <div class="hero-label"><span></span> NTU SINGAPORE · STUDENT STUDY GROUPS</div>
-        <h1 id="hero-title">Studying is better<br><em>together.</em></h1>
-        <p>Find study kakis on campus. Join a quiet focus session or get together with classmates to work through a module.</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="#sessions">Explore sessions <svg class="icon"><use href="#i-arrow"/></svg></a>
-          <button class="button button-secondary" type="button" data-open-create><svg class="icon"><use href="#i-plus"/></svg> Host a session</button>
+
+    <div class="scene-hotspots" aria-label="Move your character">
+      <button type="button" data-seat="window" class="scene-seat scene-seat-window">Window seat</button>
+      <button type="button" data-seat="table" class="scene-seat scene-seat-table">Study table</button>
+      <button type="button" data-seat="rug" class="scene-seat scene-seat-rug">Entrance</button>
+    </div>
+
+    <section id="room-dialog" class="room-panel" aria-label="Study room">
+      <div id="room-entry">
+        <form id="room-form">
+          <div id="room-profile-step">
+            <p class="step-label">01 / 02 <span></span> YOUR CHARACTER</p>
+            <h1 id="room-title">Ready to study?</h1>
+            <p class="room-intro">Make a character, then take a seat in the NTU study room.</p>
+            <div class="profile-fields">
+              <label>Name<input name="name" maxlength="28" required placeholder="Your name" autocomplete="off"></label>
+              <label>Year<select name="year" required><option value="">Select year</option><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option><option value="5+">Year 5+</option><option value="postgraduate">Postgraduate</option><option value="exchange">Exchange</option></select></label>
+              <label class="profile-full">School or major<input name="school" maxlength="90" required placeholder="e.g. Biomedical Engineering"></label>
+            </div>
+            <fieldset class="avatar-options">
+              <legend>Outfit colour</legend>
+              <label title="Gold"><input type="radio" name="avatar" value="gold" checked aria-label="Gold"><span class="swatch swatch-gold"></span></label>
+              <label title="Terracotta"><input type="radio" name="avatar" value="terracotta" aria-label="Terracotta"><span class="swatch swatch-terracotta"></span></label>
+              <label title="Sage"><input type="radio" name="avatar" value="sage" aria-label="Sage"><span class="swatch swatch-sage"></span></label>
+              <label title="Indigo"><input type="radio" name="avatar" value="indigo" aria-label="Indigo"><span class="swatch swatch-indigo"></span></label>
+            </fieldset>
+            <fieldset class="avatar-options hair-styles">
+              <legend>Hairstyle</legend>
+              <label><input type="radio" name="hairStyle" value="short" checked><span>Short</span></label>
+              <label><input type="radio" name="hairStyle" value="bob"><span>Bob</span></label>
+              <label><input type="radio" name="hairStyle" value="bun"><span>Bun</span></label>
+            </fieldset>
+            <fieldset class="avatar-options">
+              <legend>Hair colour</legend>
+              <label title="Dark"><input type="radio" name="hair" value="dark" checked aria-label="Dark"><span class="swatch swatch-dark"></span></label>
+              <label title="Brown"><input type="radio" name="hair" value="brown" aria-label="Brown"><span class="swatch swatch-brown"></span></label>
+              <label title="Blond"><input type="radio" name="hair" value="blond" aria-label="Blond"><span class="swatch swatch-blond"></span></label>
+              <label title="Rose"><input type="radio" name="hair" value="rose" aria-label="Rose"><span class="swatch swatch-rose"></span></label>
+              <label title="Slate"><input type="radio" name="hair" value="slate" aria-label="Slate"><span class="swatch swatch-slate"></span></label>
+            </fieldset>
+            <div class="accessories"><label><input type="checkbox" name="glasses"> Glasses</label><label><input type="checkbox" name="headphones"> Headphones</label></div>
+            <span id="room-avatar-preview" hidden aria-hidden="true"></span>
+            <p class="private-note">Your name and avatar appear to friends in a shared room. Your major and year stay in this browser.</p>
+            <button type="button" class="game-button game-primary" data-room-next>Next: choose a room <svg class="icon"><use href="#i-arrow"/></svg></button>
+          </div>
+          <div id="room-choice-step" hidden>
+            <p class="step-label">02 / 02 <span></span> PICK A ROOM</p>
+            <h2>Where to?</h2>
+            <p id="room-invite-notice" class="room-notice" hidden></p>
+            <p class="room-intro">Pick a place to focus. You can copy an invite once you're inside.</p>
+            <label class="room-select">Choose a room
+              <select name="room"><option value="quiet">Quiet reading room</option><option value="module">Module study room</option><option value="break">Break room</option></select>
+            </label>
+            <p id="room-error" class="form-error" role="alert" hidden></p>
+            <div class="game-actions">
+              <button type="button" class="game-button game-secondary" data-room-back>Back</button>
+              <button type="submit" class="game-button game-primary">Enter room <svg class="icon"><use href="#i-arrow"/></svg></button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div id="room-space" hidden>
+        <div class="room-header"><h2 id="room-name"></h2><p id="room-state" role="status"></p></div>
+        <ul id="room-chair-grid" aria-label="Study room seats"></ul>
+        <form id="room-goal-form">
+          <label class="goal-label" for="room-goal">My study goal</label>
+          <div class="room-goal-row">
+            <input id="room-goal" maxlength="120" placeholder="e.g. Finish two tutorial questions">
+            <button class="game-button game-secondary" type="submit">Set</button>
+          </div>
+        </form>
+        <p id="room-goal-title" class="form-help" hidden></p>
+        <div class="game-actions in-room-actions">
+          <button id="room-connect" class="game-button game-primary" type="button">Go online</button>
+          <button id="room-share" class="game-button game-secondary" type="button">Copy room link</button>
+          <button id="room-exit" class="game-button game-secondary" type="button">Leave</button>
         </div>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="hero-image"></div>
-        <span class="photo-label"><svg class="icon"><use href="#i-pin"/></svg> Inspired by The Hive</span>
+        <p id="room-connect-note" class="private-note">Go online to share a live invite. Keep the host tab open.</p>
       </div>
     </section>
-    <section class="directory" id="sessions" aria-labelledby="directory-title">
-      <div class="section-heading">
-        <div><h2 id="directory-title">Study sessions</h2><p>Find a session that fits your schedule. Times are in Singapore time.</p></div>
-        <button id="open-create" class="button button-primary" type="button"><svg class="icon"><use href="#i-plus"/></svg> New session</button>
-      </div>
-      <div class="view-tabs" aria-label="Session lists">
-        <button type="button" class="active" data-view="browse" aria-pressed="true"><svg class="icon"><use href="#i-grid"/></svg> Browse</button>
-        <button type="button" data-view="mine" aria-pressed="false"><svg class="icon"><use href="#i-calendar"/></svg> My sessions</button>
-        <button type="button" data-view="saved" aria-pressed="false"><svg class="icon"><use href="#i-bookmark"/></svg> Saved</button>
-      </div>
-      <div class="filters">
-        <label class="search-field"><svg class="icon"><use href="#i-search"/></svg><span class="sr-only">Search sessions</span><input id="search" type="search" placeholder="Search a module, topic, or place…"></label>
-        <label class="select-filter"><svg class="icon"><use href="#i-calendar"/></svg><span class="sr-only">Filter by date</span><select id="day-filter"><option value="all">Any date</option><option value="today">Today</option><option value="tomorrow">Tomorrow</option><option value="week">Next 7 days</option></select><svg class="icon chevron"><use href="#i-chevron"/></svg></label>
-        <label class="select-filter"><svg class="icon"><use href="#i-pin"/></svg><span class="sr-only">Filter by venue</span><select id="venue-filter"><option value="all">All venues</option><option>Lee Wee Nam Library</option><option>The Hive</option><option>The Arc</option></select><svg class="icon chevron"><use href="#i-chevron"/></svg></label>
-      </div>
-      <div class="mode-row">
-        <div class="mode-buttons" aria-label="Study format">
-          <button type="button" class="active" data-mode="all" aria-pressed="true">All formats</button>
-          <button type="button" data-mode="silent" aria-pressed="false">Silent focus</button>
-          <button type="button" data-mode="module" aria-pressed="false">Module study</button>
-        </div>
-        <p id="result-count" aria-live="polite"></p>
-      </div>
-      <div id="session-grid" class="session-grid"></div>
-      <noscript><p>Enable JavaScript to browse and create sessions.</p></noscript>
-    </section>
-    <section class="focus-banner" aria-labelledby="focus-heading">
-      <div class="feature-icon"><svg class="icon"><use href="#i-clock"/></svg></div>
-      <div><h2 id="focus-heading">Make time to focus.</h2><p>Set a goal, pick a timer, and track the minutes you put in today.</p></div>
-      <button class="button button-secondary" type="button" data-open-focus>Open focus timer <svg class="icon"><use href="#i-arrow"/></svg></button>
-    </section>
-    <section class="campus" id="campus" aria-labelledby="campus-title">
-      <h2 id="campus-title">Campus links</h2>
-      <div class="campus-grid">
-        <a href="https://www.ntu.edu.sg/education/libraries" target="_blank" rel="noopener"><svg class="icon"><use href="#i-book"/></svg><span><strong>NTU Library</strong><small>Hours and locations</small></span><svg class="icon"><use href="#i-up"/></svg></a>
-        <a href="https://libfaq.ntu.edu.sg/faq/267267" target="_blank" rel="noopener"><svg class="icon"><use href="#i-calendar"/></svg><span><strong>Book a study space</strong><small>Official NTU room and seat bookings</small></span><svg class="icon"><use href="#i-up"/></svg></a>
-        <a href="https://www.ntu.edu.sg/hey/search-stories/detail/6-study-nooks-you%27ll-love-%28freshmen--take-note%29" target="_blank" rel="noopener"><svg class="icon"><use href="#i-pin"/></svg><span><strong>Explore study spots</strong><small>Campus guide from NTU HEY!</small></span><svg class="icon"><use href="#i-up"/></svg></a>
-      </div>
-    </section>
+
+    <nav class="scene-tools" aria-label="Study tools">
+      <button class="tool-pill" type="button" data-open-focus><svg class="icon"><use href="#i-clock"/></svg><span>Focus timer</span></button>
+      <a class="tool-pill" href="./campus.html"><svg class="icon"><use href="#i-calendar"/></svg><span>Campus sessions</span></a>
+    </nav>
+    <noscript><p class="room-panel">Enable JavaScript to enter the study room.</p></noscript>
   </main>
-  <footer class="footer">
-    <div class="shell footer-inner"><a class="brand" href="#"><img src="./mark.svg" width="32" height="32" alt="">StudyKaki<span class="brand-dot">.</span></a><p>Independent student project for the NTU community.</p><a href="#main">Back to top ↑</a></div>
-  </footer>
-  <dialog id="create-dialog" aria-labelledby="create-title">
-    <div class="dialog-inner">
-      <div class="dialog-head"><h2 id="create-title">Host a study session</h2><button type="button" data-close-dialog class="icon-button" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button></div>
-      <p class="dialog-intro">Pick a time and place, then share the session link with your study kakis.</p>
-      <form id="create-form" class="form-grid">
-        <label class="full">Session title<input name="title" maxlength="72" required autofocus placeholder="e.g. BG3104 MRI revision"></label>
-        <label>Study format<select name="mode"><option value="silent">Silent focus</option><option value="module">Module study</option></select></label>
-        <label>Module code <small>(optional)</small><input name="module" maxlength="24" placeholder="e.g. BG3104"></label>
-        <label class="full">Venue<input name="venue" list="ntu-venues" maxlength="80" required placeholder="e.g. The Hive"><datalist id="ntu-venues"><option value="Lee Wee Nam Library"><option value="The Hive"><option value="The Arc"></datalist></label>
-        <label>Date (SGT)<input type="date" name="date" required></label>
-        <label>Start time (SGT)<input type="time" name="time" required></label>
-        <label>Duration<select name="duration"><option value="25">25 min</option><option value="50">50 min</option><option value="60" selected>1 hr</option><option value="75">75 min</option><option value="90">1 hr 30 min</option><option value="120">2 hr</option></select></label>
-        <label>Group size, including host<input name="capacity" type="number" min="2" max="30" value="4" required></label>
-        <label class="full">Session notes <small>(optional)</small><textarea name="notes" rows="3" maxlength="360" placeholder="What are you working on? Where should people meet?"></textarea></label>
-        <p class="form-help full">Anyone with your link can read the session details and notes. Your profile stays on this browser.</p>
-        <p id="create-error" class="form-error full" role="alert" hidden></p>
-        <div class="form-actions full"><button class="button button-secondary" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Create session <svg class="icon"><use href="#i-arrow"/></svg></button></div>
-      </form>
-    </div>
-  </dialog>
-  <dialog id="detail-dialog" aria-labelledby="detail-title">
-    <div class="dialog-inner detail-inner"><button type="button" data-close-dialog class="icon-button detail-close" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button><div id="detail-content"></div></div>
-  </dialog>
-  <dialog id="profile-dialog" aria-labelledby="profile-title">
-    <div class="dialog-inner">
-      <div class="dialog-head"><h2 id="profile-title">My profile</h2><button type="button" data-close-dialog class="icon-button" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button></div>
-      <p class="dialog-intro">Your profile is saved in this browser.</p>
-      <form id="profile-form" class="form-grid">
-        <label class="full">Name<input name="name" maxlength="60" required autocomplete="name" placeholder="Your name" autofocus></label>
-        <label class="full">School or major<input name="school" maxlength="90" required placeholder="e.g. Biomedical Engineering"></label>
-        <label>Year<select name="year" required><option value="">Select year</option><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option><option value="5+">Year 5+</option><option value="postgraduate">Postgraduate</option><option value="exchange">Exchange</option></select></label>
-        <label>Nickname <small>(optional)</small><input name="nickname" maxlength="32" placeholder="What friends call you"></label>
-        <div class="form-actions full"><button class="button button-secondary" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Save profile</button></div>
-      </form>
-    </div>
-  </dialog>
   <dialog id="focus-dialog" aria-labelledby="focus-title">
     <div class="dialog-inner">
-      <div class="dialog-head"><h2 id="focus-title">Focus timer</h2><button type="button" data-close-dialog class="icon-button" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button></div>
+      <div class="dialog-head"><h2 id="focus-title">Focus timer</h2><form method="dialog"><button type="submit" class="icon-button" aria-label="Close focus timer"><svg class="icon"><use href="#i-close"/></svg></button></form></div>
       <div class="timer-modes" aria-label="Timer mode"><button type="button" data-timer-mode="focus" aria-pressed="true">Focus</button><button type="button" data-timer-mode="break" aria-pressed="false">5-min break</button></div>
       <div id="timer-display" class="timer-display" role="timer" aria-label="Time remaining">25:00</div>
       <div class="timer-presets" aria-label="Focus duration"><button type="button" data-focus-minutes="25" aria-pressed="true">25m</button><button type="button" data-focus-minutes="50" aria-pressed="false">50m</button><button type="button" data-focus-minutes="75" aria-pressed="false">75m</button></div>
       <label class="goal-label">What will you work on?<input id="focus-goal" maxlength="140" placeholder="e.g. Finish the Week 8 tutorial"></label>
       <div class="timer-actions"><button class="button button-primary" id="timer-toggle" type="button">Start</button><button class="button button-secondary" id="timer-reset" type="button">Reset</button></div>
-      <p id="focus-summary" class="focus-summary"></p><p id="timer-status" class="sr-only" role="status"></p>
+      <p id="focus-summary" class="focus-summary"></p><p id="timer-status" class="timer-status" role="status"></p>
       <div class="focus-tasks">
         <h3>Study checklist</h3>
         <form id="focus-task-form">
@@ -157,6 +169,5 @@
       </div>
     </div>
   </dialog>
-  <div id="app-toast" class="toast" role="status" hidden></div>
 </body>
 </html>
