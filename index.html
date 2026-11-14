@@ -73,7 +73,7 @@
       <button type="button" data-seat="table" class="scene-seat scene-seat-table">Study table</button>
       <button type="button" data-seat="rug" class="scene-seat scene-seat-rug">Entrance</button>
     </div>
-    <p id="scene-controls" class="scene-controls" hidden>Click the floor to walk <span>·</span> WASD or arrows <span>·</span> Click a chair to sit</p>
+    <p id="scene-controls" class="scene-controls" hidden>Click the floor to walk <span>·</span> WASD or arrows <span>·</span> Click a chair or press E to sit</p>
     <p id="walk-status" class="sr-only" role="status"></p>
 
     <section id="room-dialog" class="room-panel" aria-label="Study room">
@@ -146,6 +146,9 @@
           <button id="room-share" class="game-button game-secondary" type="button">Copy room link</button>
           <button id="room-exit" class="game-button game-secondary" type="button">Leave</button>
         </div>
+        <label id="room-copy-fallback" class="room-copy-fallback" hidden>Copy the invite link
+          <input id="room-copy-url" type="url" readonly>
+        </label>
         <p id="room-connect-note" class="private-note">Go online to share a live invite. Keep the host tab open.</p>
       </div>
     </section>

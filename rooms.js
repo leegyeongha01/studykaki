@@ -242,6 +242,8 @@
 
   function leaveRoom() {
     remotePeers = [];
+    const shareFallback = dialog.querySelector("#room-copy-fallback");
+    if (shareFallback) shareFallback.hidden = true;
     latestPosition = undefined;
     rosterKey = "";
     connectionRevision += 1;
@@ -388,8 +390,10 @@
     const url = new URL(location.href);
     url.hash = new URLSearchParams({ room: room.kind, invite: room.code }).toString();
     const roomLink = connection?.shareUrl?.() || url.href;
+    const fallback = dialog.querySelector("#room-copy-fallback");
     try {
       await navigator.clipboard.writeText(roomLink);
+      if (fallback) fallback.hidden = true;
       clearTimeout(feedbackTimer);
       if (status) {
         const previousStatus = status.textContent;
@@ -399,7 +403,12 @@
         }, 3_000);
       }
     } catch {
-      window.prompt("Copy this room link:", roomLink);
+      const field = dialog.querySelector("#room-copy-url");
+      if (!fallback || !field) return;
+      field.value = roomLink;
+      fallback.hidden = false;
+      field.focus();
+      field.select();
     }
   }
 

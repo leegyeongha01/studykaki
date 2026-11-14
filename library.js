@@ -31,6 +31,8 @@ let lastTime = 0;
 let lastReport = 0;
 let lastPayload = "";
 let rally;
+let cameraFocus;
+let narrowView = false;
 
 function init() {
   if (!THREE || !globalThis.StudyKakiWalk) return;
@@ -244,17 +246,24 @@ function resize() {
   if (!width || !height) return;
   const aspect = width / height;
   const portrait = aspect < 0.78;
-  const targetX = roomActive ? (portrait ? 1.4 : -0.4) : library.spawn.x - (portrait ? 0.2 : 2.4);
-  const targetZ = roomActive ? (portrait ? 0.1 : 0) : library.spawn.z - 1.45;
-  camera.position.set(12 + targetX, 17, 16 + targetZ);
-  camera.lookAt(targetX, 0.25, targetZ);
-  const half = roomActive ? (portrait ? 12.3 : Math.max(8.75, 12.7 / aspect)) : (portrait ? 6.4 : 5.4);
+  narrowView = portrait;
+  const targetX = roomActive ? (portrait ? player.root.position.x : -0.4) : library.spawn.x - (portrait ? 0.2 : 2.4);
+  const targetZ = roomActive ? (portrait ? player.root.position.z : 0) : library.spawn.z - 1.45;
+  setCameraFocus(targetX, targetZ);
+  const half = roomActive ? (portrait ? 9.8 : Math.max(8.75, 12.7 / aspect)) : (portrait ? 6.4 : 5.4);
   camera.left = -half * aspect;
   camera.right = half * aspect;
   camera.top = half;
   camera.bottom = -half;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height, false);
+}
+
+function setCameraFocus(x, z) {
+  cameraFocus = { x, z };
+  camera.position.set(12 + x, 17, 16 + z);
+  camera.lookAt(x, 0.25, z);
+  camera.updateMatrixWorld();
 }
 
 function pointerDown(event) {
@@ -275,8 +284,15 @@ function pointerUp(event) {
   const ray = new THREE.Raycaster();
   ray.setFromCamera(position, camera);
   const seat = library.seats
-    .map(candidate => ({ candidate, distance: ray.ray.distanceToPoint(new THREE.Vector3(candidate.x, candidate.y ?? 0.44, candidate.z)) }))
-    .filter(({ distance }) => distance < 0.3)
+    .map(candidate => {
+      const box = new THREE.Box3(
+        new THREE.Vector3(candidate.x - 0.27, 0.26, candidate.z - 0.27),
+        new THREE.Vector3(candidate.x + 0.27, (candidate.y ?? 0.44) + 0.37, candidate.z + 0.27),
+      );
+      const hit = ray.ray.intersectBox(box, new THREE.Vector3());
+      return { candidate, distance: hit ? ray.ray.origin.distanceTo(hit) : Infinity };
+    })
+    .filter(({ distance }) => Number.isFinite(distance))
     .sort((first, second) => first.distance - second.distance)[0]?.candidate;
   if (seat) {
     if (sittingAt?.id === seat.id) { stand(); return; }
@@ -313,12 +329,16 @@ function walkTo(destination, seat = null) {
 
 function keyEvent(event, down) {
   const key = event.key.toLowerCase();
-  if (!walkKeys.has(key)) return;
+  if (!walkKeys.has(key) && key !== "e") return;
   if (!down) { keys.delete(key); return; }
   if (!roomActive || event.altKey || event.metaKey || event.ctrlKey ||
       document.querySelector("dialog[open]") ||
-      event.target.closest?.("input, select, textarea, button, [contenteditable]")) return;
+      event.target.closest?.("input, select, textarea, [contenteditable]")) return;
   event.preventDefault();
+  if (key === "e") {
+    if (!event.repeat) sitNearby();
+    return;
+  }
   if (!keys.size) {
     stand();
     waypoints = [];
@@ -328,6 +348,16 @@ function keyEvent(event, down) {
   keys.add(key);
 }
 
+function sitNearby() {
+  if (sittingAt) { stand(); return; }
+  const { x, z } = player.root.position;
+  const closest = library.seats
+    .map(seat => ({ seat, distance: Math.hypot(x - seat.approach.x, z - seat.approach.z) }))
+    .filter(({ seat, distance }) => distance <= 1.25 && nav.canTravel({ x, z }, seat.approach))
+    .sort((first, second) => first.distance - second.distance)[0]?.seat;
+  if (closest) walkTo(closest.approach, closest);
+  else status.textContent = "Walk closer to a chair to sit.";
+}
 function direction() {
   const has = (one, two) => Number(keys.has(one) || keys.has(two));
   const side = has("d", "arrowright") - has("a", "arrowleft");
@@ -468,6 +498,13 @@ function frame(time) {
   lastTime = time;
   if (body.dataset.sceneRender !== "3d" || document.hidden) return;
   const walking = walkFrame(dt);
+  if (roomActive && narrowView) {
+    const here = player.root.position;
+    const factor = 1 - Math.exp(-4.8 * dt);
+    const x = cameraFocus.x + (here.x - cameraFocus.x) * factor;
+    const z = cameraFocus.z + (here.z - cameraFocus.z) * factor;
+    if (Math.hypot(x - cameraFocus.x, z - cameraFocus.z) > 0.0002) setCameraFocus(x, z);
+  }
   animate(player, walking, Boolean(sittingAt), dt);
   for (const actor of players.values()) {
     const state = actor.state;

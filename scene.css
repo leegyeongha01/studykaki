@@ -11,7 +11,7 @@
 #scene-3d { position: absolute; inset: 0; display: none; background: #41374a; z-index: -1; }
 #scene-3d canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 [data-scene-render="3d"] #scene-3d { display: block; }
-[data-scene-render="3d"] .scene-wall, [data-scene-render="3d"] .scene-vignette, [data-scene-render="3d"] .scene-rug, [data-scene-render="3d"] #scene-character, [data-scene-render="3d"] #scene-peers, [data-scene-render="3d"] .scene-hotspots { display: none; }
+[data-scene-render="3d"] .scene-wall, [data-scene-render="3d"] .scene-vignette, [data-scene-render="3d"] .scene-rug, [data-scene-render="3d"] #scene-character, [data-scene-render="3d"] #scene-peers, [data-scene-render="3d"] .study-scene .scene-hotspots { display: none; }
 [data-scene-render="3d"][data-room-phase="active"] #scene-3d { cursor: crosshair; }
 .scene-controls { position: absolute; right: 23px; bottom: 74px; z-index: 2; background: #23312add; color: #fff7e7; padding: 5px 10px; border-radius: 8px; font-size: 12px; }
 .scene-controls span { color: #e3b95c; padding: 0 2px; }
@@ -121,6 +121,8 @@
 .room-panel .room-seat { min-height: 63px; padding: 4px 2px; }
 .room-panel .room-seat-avatar { transform: scale(.8); height: 27px; }
 .room-panel .room-goal-row input { min-height: 37px; }
+.room-copy-fallback { display: block; margin-top: 9px; font-size: 12px; font-weight: 700; }
+.room-copy-fallback input { display: block; width: 100%; padding: 6px 8px; border: 1px solid #9b9f8b; border-radius: 6px; background: #fffdf4; font-size: 13px; }
 .scene-tools { position: absolute; z-index: 2; right: 23px; bottom: 24px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .tool-pill, .scene-seat { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #dfc6a763; border-radius: 30px; background: #243831df; color: #fff6e6; padding: 8px 12px; font-size: 12px; font-weight: 700; box-shadow: 0 3px 9px #26171038; }
 .tool-pill:hover, .scene-seat:hover { background: #405744; }
